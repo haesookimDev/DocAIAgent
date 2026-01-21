@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.14"
+# dependencies = [
+#     "jsonschema",
+# ]
+# ///
+
 import json
 from pathlib import Path
 from jsonschema import Draft202012Validator
