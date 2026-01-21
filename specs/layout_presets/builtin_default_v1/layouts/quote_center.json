@@ -1,0 +1,140 @@
+{
+  "layout_id": "quote_center",
+  "description": "Centered quote with attribution.",
+  "slots": [
+    {
+      "slot_id": "quote",
+      "bbox": {
+        "unit": "rel_safe",
+        "x": 0.1,
+        "y": 0.22,
+        "w": 0.8,
+        "h": 0.45
+      },
+      "padding_in": {
+        "t": 0.06,
+        "r": 0.06,
+        "b": 0.06,
+        "l": 0.06
+      },
+      "flow": {
+        "type": "fixed"
+      },
+      "accept": {
+        "kinds": [
+          "text"
+        ],
+        "roles": [
+          "quote",
+          "text"
+        ]
+      },
+      "capacity": {
+        "min": 1,
+        "max": 1
+      },
+      "style_ref": "role.quote",
+      "overflow_policy": {
+        "allow_shrink": true,
+        "min_font_pt": 18,
+        "on_overflow": [
+          "shrink_font",
+          "wrap",
+          "truncate"
+        ]
+      },
+      "z_base": 20
+    },
+    {
+      "slot_id": "attribution",
+      "bbox": {
+        "unit": "rel_safe",
+        "x": 0.55,
+        "y": 0.7,
+        "w": 0.45,
+        "h": 0.1
+      },
+      "padding_in": {
+        "t": 0.02,
+        "r": 0.06,
+        "b": 0.02,
+        "l": 0.06
+      },
+      "flow": {
+        "type": "fixed"
+      },
+      "accept": {
+        "kinds": [
+          "text"
+        ],
+        "roles": [
+          "attribution",
+          "subtitle"
+        ]
+      },
+      "capacity": {
+        "min": 0,
+        "max": 1
+      },
+      "style_ref": "role.subtitle",
+      "overflow_policy": {
+        "allow_shrink": true,
+        "min_font_pt": 12,
+        "on_overflow": [
+          "shrink_font",
+          "truncate"
+        ]
+      },
+      "z_base": 20
+    },
+    {
+      "slot_id": "footer_citations",
+      "bbox": {
+        "unit": "in",
+        "x": 0.5,
+        "y": 7.1,
+        "w": 12.333,
+        "h": 0.4
+      },
+      "padding_in": {
+        "t": 0.02,
+        "r": 0.0,
+        "b": 0.02,
+        "l": 0.0
+      },
+      "flow": {
+        "type": "fixed"
+      },
+      "accept": {
+        "kinds": [
+          "text"
+        ],
+        "roles": [
+          "citations"
+        ]
+      },
+      "capacity": {
+        "min": 0,
+        "max": 1
+      },
+      "style_ref": "role.citations",
+      "overflow_policy": {
+        "allow_shrink": true,
+        "min_font_pt": 8,
+        "on_overflow": [
+          "shrink_font",
+          "truncate"
+        ]
+      },
+      "z_base": 5
+    }
+  ],
+  "rules": {
+    "role_priority": [
+      "quote",
+      "attribution",
+      "citations"
+    ],
+    "allow_slot_fallback": true
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "layout_id": "one_column",
+  "description": "Title row + single body column (stack vertical) + footer citations.",
+  "slots": [
+    {
+      "slot_id": "title",
+      "bbox": {
+        "unit": "rel_safe",
+        "x": 0.0,
+        "y": 0.0,
+        "w": 1.0,
+        "h": 0.13
+      },
+      "padding_in": {
+        "t": 0.04,
+        "r": 0.06,
+        "b": 0.04,
+        "l": 0.06
+      },
+      "flow": {
+        "type": "fixed"
+      },
+      "accept": {
+        "kinds": [
+          "text"
+        ],
+        "roles": [
+          "title",
+          "heading"
+        ]
+      },
+      "capacity": {
+        "min": 1,
+        "max": 1
+      },
+      "style_ref": "role.heading",
+      "overflow_policy": {
+        "allow_shrink": true,
+        "min_font_pt": 18,
+        "on_overflow": [
+          "shrink_font",
+          "wrap",
+          "truncate"
+        ]
+      },
+      "z_base": 20
+    },
+    {
+      "slot_id": "body",
+      "bbox": {
+        "unit": "rel_safe",
+        "x": 0.0,
+        "y": 0.15,
+        "w": 1.0,
+        "h": 0.85
+      },
+      "padding_in": {
+        "t": 0.04,
+        "r": 0.06,
+        "b": 0.04,
+        "l": 0.06
+      },
+      "flow": {
+        "type": "stack_vertical",
+        "stack_gap_in": 0.1
+      },
+      "accept": {
+        "kinds": [
+          "text",
+          "bullets",
+          "chart",
+          "table",
+          "image",
+          "shape",
+          "divider"
+        ],
+        "roles": []
+      },
+      "capacity": {
+        "min": 1,
+        "max": 10
+      },
+      "style_ref": "role.body",
+      "overflow_policy": {
+        "allow_shrink": true,
+        "min_font_pt": 12,
+        "on_overflow": [
+          "shrink_font",
+          "wrap",
+          "split_slide"
+        ]
+      },
+      "z_base": 10
+    },
+    {
+      "slot_id": "footer_citations",
+      "bbox": {
+        "unit": "in",
+        "x": 0.5,
+        "y": 7.1,
+        "w": 12.333,
+        "h": 0.4
+      },
+      "padding_in": {
+        "t": 0.02,
+        "r": 0.0,
+        "b": 0.02,
+        "l": 0.0
+      },
+      "flow": {
+        "type": "fixed"
+      },
+      "accept": {
+        "kinds": [
+          "text"
+        ],
+        "roles": [
+          "citations"
+        ]
+      },
+      "capacity": {
+        "min": 0,
+        "max": 1
+      },
+      "style_ref": "role.citations",
+      "overflow_policy": {
+        "allow_shrink": true,
+        "min_font_pt": 8,
+        "on_overflow": [
+          "shrink_font",
+          "truncate"
+        ]
+      },
+      "z_base": 5
+    }
+  ],
+  "rules": {
+    "role_priority": [
+      "title",
+      "heading",
+      "chart",
+      "table",
+      "image",
+      "bullets",
+      "text",
+      "citations"
+    ],
+    "default_body_slot": "body",
+    "allow_slot_fallback": true
+  }
+}
