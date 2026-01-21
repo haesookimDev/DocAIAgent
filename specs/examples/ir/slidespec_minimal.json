@@ -1,0 +1,29 @@
+{
+  "schema_version": "slidespec_v1",
+  "deck": {
+    "title": "Minimal Deck",
+    "language": "en",
+    "metadata": { "purpose": "schema validation fixture" }
+  },
+  "template": {
+    "template_id": "tpl_default",
+    "brand_kit_id": "bk_default",
+    "slide_size": "widescreen_16_9"
+  },
+  "slides": [
+    {
+      "slide_id": "s1",
+      "type": "title",
+      "layout": { "layout_id": "title_center" },
+      "elements": [
+        {
+          "element_id": "s1_e1",
+          "kind": "text",
+          "role": "title",
+          "content": { "text": "Hello SlideSpec v1", "format": "plain" }
+        }
+      ],
+      "speaker_notes": "This is a minimal example."
+    }
+  ]
+}
