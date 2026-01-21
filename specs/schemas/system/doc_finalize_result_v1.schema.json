@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workagent.example.com/schemas/system/doc_finalize_result_v1.schema.json",
+  "title": "Doc Finalize Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "artifact_id", "artifact_version_id", "status", "outputs"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "doc_finalize_result_v1" },
+    "artifact_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "artifact_version_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "status": { "type": "string", "enum": ["draft", "published", "archived"] },
+
+    "final_ir_storage_key": { "type": "string" },
+
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["docx_storage_key"],
+      "properties": {
+        "docx_storage_key": { "type": "string", "minLength": 1 },
+        "pdf_storage_key": { "type": "string" },
+        "render_report_storage_key": { "type": "string" }
+      }
+    },
+
+    "checksums": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "docx_sha256": { "type": "string", "minLength": 32, "maxLength": 128 },
+        "ir_sha256": { "type": "string", "minLength": 32, "maxLength": 128 }
+      }
+    },
+
+    "metrics": { "type": "object", "additionalProperties": true },
+    "extensions": { "type": "object" }
+  }
+}
