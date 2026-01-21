@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workagent.example.com/schemas/rag/evidence_list_v1.schema.json",
+  "title": "Evidence List v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "evidences"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "evidence_list_v1" },
+
+    "query": { "type": "string", "maxLength": 2000 },
+
+    "evidences": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/evidence" }
+    },
+
+    "extensions": { "type": "object" }
+  },
+
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_id", "file_id", "text"],
+      "properties": {
+        "evidence_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "file_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "chunk_id": { "type": "string", "maxLength": 120 },
+
+        "title": { "type": "string", "maxLength": 300 },
+        "source": { "type": "string", "maxLength": 300 },
+
+        "locator": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "page": { "type": "integer", "minimum": 1 },
+            "section": { "type": "string", "maxLength": 200 },
+            "paragraph": { "type": "string", "maxLength": 200 }
+          }
+        },
+
+        "text": { "type": "string", "minLength": 1, "maxLength": 20000 },
+
+        "score": { "type": "number", "minimum": 0 },
+        "embedding_model": { "type": "string", "maxLength": 200 },
+
+        "extensions": { "type": "object" }
+      }
+    }
+  }
+}
