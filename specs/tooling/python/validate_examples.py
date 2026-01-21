@@ -10,6 +10,7 @@ SCHEMA_MAP = {
     "examples/render/layout_plan_example.json": "schemas/layout/layout_plan_v1.schema.json",
     "examples/render/pptx_ops_example.json": "schemas/render/pptx_ops_v1.schema.json",
     "examples/render/render_report_example.json": "schemas/render/render_report_v1.schema.json",
+    "examples/ir/slidespec_minimal.json": "schemas/ir/slidespec_v1.schema.json",
 }
 
 def load_json(path: Path):
