@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workagent.example.com/schemas/render/pptx_ops_v1.schema.json",
+  "title": "PptxOps v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "template_id", "brand_kit_id", "slide_size", "slides"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "pptx_ops_v1" },
+    "template_id": { "type": "string", "minLength": 1 },
+    "brand_kit_id": { "type": "string", "minLength": 1 },
+    "slide_size": { "type": "string", "minLength": 1, "maxLength": 80 },
+
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/slideOps" }
+    },
+
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/asset" },
+      "maxItems": 2000
+    },
+
+    "extensions": { "type": "object" }
+  },
+
+  "$defs": {
+    "slideOps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slide_id", "layout_id", "ops"],
+      "properties": {
+        "slide_id": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "layout_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+
+        "background": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": { "type": "string", "enum": ["template", "solid", "image"] },
+            "ref": { "type": "object" }
+          }
+        },
+
+        "ops": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2000,
+          "items": { "$ref": "#/$defs/op" }
+        },
+
+        "extensions": { "type": "object" }
+      }
+    },
+
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_id", "storage_key", "content_type"],
+      "properties": {
+        "asset_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "storage_key": { "type": "string", "minLength": 1 },
+        "content_type": { "type": "string", "minLength": 1 },
+        "checksum": { "type": "string" },
+        "byte_size": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "op": {
+      "oneOf": [
+        { "$ref": "#/$defs/addText" },
+        { "$ref": "#/$defs/addImage" },
+        { "$ref": "#/$defs/addChart" },
+        { "$ref": "#/$defs/addTable" },
+        { "$ref": "#/$defs/addShape" },
+        { "$ref": "#/$defs/addNotes" }
+      ]
+    },
+
+    "baseOp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op_id", "type", "z_index"],
+      "properties": {
+        "op_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "type": { "type": "string" },
+        "element_id": { "type": "string", "maxLength": 80 },
+        "z_index": { "type": "integer", "minimum": 0, "maximum": 10000 }
+      }
+    },
+
+    "bboxIn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number", "minimum": 0 },
+        "h": { "type": "number", "minimum": 0 }
+      }
+    },
+
+    "textStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "font_family": { "type": "string", "maxLength": 200 },
+        "font_pt": { "type": "number", "minimum": 1, "maximum": 200 },
+        "bold": { "type": "boolean" },
+        "italic": { "type": "boolean" },
+        "color_hex": { "type": "string", "pattern": "^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$" },
+        "align": { "type": "string", "enum": ["left", "center", "right", "justify"] },
+        "valign": { "type": "string", "enum": ["top", "middle", "bottom"] }
+      }
+    },
+
+    "addText": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOp" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["op_id", "type", "text", "bbox_in", "z_index"],
+          "properties": {
+            "type": { "type": "string", "const": "addText" },
+            "text": { "type": "string" },
+            "bbox_in": { "$ref": "#/$defs/bboxIn" },
+            "style": { "$ref": "#/$defs/textStyle" }
+          }
+        }
+      ]
+    },
+
+    "addImage": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOp" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["op_id", "type", "asset_id", "bbox_in", "z_index"],
+          "properties": {
+            "type": { "type": "string", "const": "addImage" },
+            "asset_id": { "type": "string", "minLength": 1 },
+            "bbox_in": { "$ref": "#/$defs/bboxIn" },
+            "crop": { "type": "string", "enum": ["contain", "cover", "center_crop"] }
+          }
+        }
+      ]
+    },
+
+    "addChart": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOp" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["op_id", "type", "chart_type", "data", "bbox_in", "z_index"],
+          "properties": {
+            "type": { "type": "string", "const": "addChart" },
+            "chart_type": { "type": "string", "enum": ["bar", "line", "pie", "area", "stacked_bar"] },
+            "data": { "type": "object" },
+            "bbox_in": { "$ref": "#/$defs/bboxIn" },
+            "style": { "type": "object" }
+          }
+        }
+      ]
+    },
+
+    "addTable": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOp" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["op_id", "type", "table", "bbox_in", "z_index"],
+          "properties": {
+            "type": { "type": "string", "const": "addTable" },
+            "table": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["columns", "rows"],
+              "properties": {
+                "columns": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 50,
+                  "items": { "type": "string" }
+                },
+                "rows": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "items": { "type": ["string", "number", "null"] }
+                  }
+                }
+              }
+            },
+            "bbox_in": { "$ref": "#/$defs/bboxIn" },
+            "style": { "type": "object" }
+          }
+        }
+      ]
+    },
+
+    "addShape": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOp" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["op_id", "type", "shape", "bbox_in", "z_index"],
+          "properties": {
+            "type": { "type": "string", "const": "addShape" },
+            "shape": { "type": "string", "enum": ["rect", "line", "divider", "circle"] },
+            "bbox_in": { "$ref": "#/$defs/bboxIn" },
+            "style": { "type": "object" }
+          }
+        }
+      ]
+    },
+
+    "addNotes": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOp" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["op_id", "type", "notes", "z_index"],
+          "properties": {
+            "type": { "type": "string", "const": "addNotes" },
+            "notes": { "type": "string" }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workagent.example.com/schemas/layout/layout_preset_package_v1.schema.json",
+  "title": "LayoutPresetPackage v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "name", "slide_sizes", "layouts"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "layout_preset_package_v1" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+
+    "slide_sizes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/slideSizeSpec" }
+    },
+
+    "layouts": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/layoutSpec" }
+    },
+
+    "extensions": { "type": "object" }
+  },
+
+  "$defs": {
+    "slideSizeSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width_in", "height_in", "safe_area_in", "footer_band_in"],
+      "properties": {
+        "width_in": { "type": "number", "minimum": 1, "maximum": 100 },
+        "height_in": { "type": "number", "minimum": 1, "maximum": 100 },
+        "safe_area_in": { "$ref": "#/$defs/bboxIn" },
+        "footer_band_in": { "$ref": "#/$defs/bboxIn" }
+      }
+    },
+
+    "layoutSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["layout_id", "slots"],
+      "properties": {
+        "layout_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "description": { "type": "string", "maxLength": 500 },
+
+        "slots": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": { "$ref": "#/$defs/slotSpec" }
+        },
+
+        "rules": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "role_priority": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "maxItems": 200
+            },
+            "default_body_slot": { "type": "string", "minLength": 1, "maxLength": 80 },
+            "allow_slot_fallback": { "type": "boolean", "default": true }
+          }
+        },
+
+        "slot_assignment_hints": {
+          "type": "object",
+          "additionalProperties": true
+        },
+
+        "extensions": { "type": "object" }
+      }
+    },
+
+    "slotSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot_id", "bbox", "flow", "accept", "capacity", "z_base"],
+      "properties": {
+        "slot_id": { "type": "string", "minLength": 1, "maxLength": 80 },
+
+        "bbox": { "$ref": "#/$defs/bboxSpec" },
+
+        "padding_in": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "t": { "type": "number", "minimum": 0, "maximum": 5 },
+            "r": { "type": "number", "minimum": 0, "maximum": 5 },
+            "b": { "type": "number", "minimum": 0, "maximum": 5 },
+            "l": { "type": "number", "minimum": 0, "maximum": 5 }
+          },
+          "default": { "t": 0, "r": 0, "b": 0, "l": 0 }
+        },
+
+        "flow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "type": "string", "enum": ["fixed", "stack_vertical", "grid"] },
+            "stack_gap_in": { "type": "number", "minimum": 0, "maximum": 5 },
+            "grid": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "columns": { "type": "integer", "minimum": 1, "maximum": 12 },
+                "rows": { "type": "integer", "minimum": 1, "maximum": 12 },
+                "gap_in": { "type": "number", "minimum": 0, "maximum": 5 }
+              }
+            }
+          }
+        },
+
+        "accept": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kinds"],
+          "properties": {
+            "kinds": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 50,
+              "items": {
+                "type": "string",
+                "enum": ["text", "bullets", "image", "chart", "table", "shape", "divider"]
+              }
+            },
+            "roles": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "maxItems": 200
+            }
+          }
+        },
+
+        "capacity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "max": { "type": "integer", "minimum": 0, "maximum": 100 }
+          }
+        },
+
+        "style_ref": { "type": "string", "minLength": 1, "maxLength": 120 },
+
+        "overflow_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "allow_shrink": { "type": "boolean", "default": true },
+            "min_font_pt": { "type": "number", "minimum": 6, "maximum": 72 },
+            "on_overflow": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["shrink_font", "wrap", "truncate", "split_slide", "change_layout", "summarize"]
+              },
+              "maxItems": 10
+            }
+          }
+        },
+
+        "z_base": { "type": "integer", "minimum": 0, "maximum": 10000 },
+
+        "extensions": { "type": "object" }
+      }
+    },
+
+    "bboxSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "x", "y", "w", "h"],
+      "properties": {
+        "unit": { "type": "string", "enum": ["rel_safe", "in"] },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number" },
+        "h": { "type": "number" }
+      }
+    },
+
+    "bboxIn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number" },
+        "h": { "type": "number" }
+      }
+    }
+  }
+}

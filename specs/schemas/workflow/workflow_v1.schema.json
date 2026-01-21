@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workagent.example.com/schemas/workflow/workflow_v1.schema.json",
+  "title": "WorkflowSpec v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["spec_version", "agent", "steps", "edges"],
+  "properties": {
+    "spec_version": { "type": "string", "const": "workflow_v1" },
+
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "display_name", "category"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "display_name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    },
+
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "input_schema_ref": { "type": "string", "minLength": 1 },
+        "output_ir_schema_ref": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeouts_sec": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "agent": { "type": "integer", "minimum": 1, "maximum": 86400 },
+            "tool": { "type": "integer", "minimum": 1, "maximum": 86400 },
+            "render": { "type": "integer", "minimum": 1, "maximum": 86400 },
+            "quality": { "type": "integer", "minimum": 1, "maximum": 86400 },
+            "system": { "type": "integer", "minimum": 1, "maximum": 86400 }
+          }
+        },
+        "retries": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "agent": { "type": "integer", "minimum": 0, "maximum": 10 },
+            "tool": { "type": "integer", "minimum": 0, "maximum": 10 },
+            "render": { "type": "integer", "minimum": 0, "maximum": 10 },
+            "quality": { "type": "integer", "minimum": 0, "maximum": 10 },
+            "system": { "type": "integer", "minimum": 0, "maximum": 10 }
+          }
+        },
+        "max_fix_loops": { "type": "integer", "minimum": 0, "maximum": 20 }
+      }
+    },
+
+    "policy_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "external_web": { "type": "string", "enum": ["required", "optional", "forbidden"] },
+        "pii_masking": { "type": "string", "enum": ["required", "recommended", "optional", "forbidden"] },
+        "allowed_connectors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 200
+        }
+      }
+    },
+
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/step" }
+    },
+
+    "edges": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 2000,
+      "items": { "$ref": "#/$defs/edge" }
+    },
+
+    "state_mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "planning_steps": { "type": "array", "items": { "type": "string" }, "maxItems": 500 },
+        "executing_steps": { "type": "array", "items": { "type": "string" }, "maxItems": 500 },
+        "rendering_steps": { "type": "array", "items": { "type": "string" }, "maxItems": 500 },
+        "quality_steps": { "type": "array", "items": { "type": "string" }, "maxItems": 500 }
+      }
+    },
+
+    "extensions": { "type": "object" }
+  },
+
+  "$defs": {
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "to": { "type": "string", "minLength": 1, "maxLength": 200 }
+      }
+    },
+
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_key", "type"],
+      "properties": {
+        "step_key": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "type": { "type": "string", "enum": ["agent", "tool", "render", "quality", "approval", "system"] },
+
+        "runner": { "type": "string", "minLength": 1, "maxLength": 300 },
+
+        "when": { "$ref": "#/$defs/whenExpr" },
+
+        "input": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/inputMapping" }
+        },
+
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema_ref": { "type": "string", "minLength": 1 },
+            "store_raw_output": { "type": "boolean", "default": false }
+          }
+        },
+
+        "retry_policy": { "$ref": "#/$defs/retryPolicy" },
+        "timeout_sec": { "type": "integer", "minimum": 1, "maximum": 86400 },
+
+        "approval_key": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "target_ref": { "$ref": "#/$defs/inputMapping" },
+        "editable": { "type": "boolean" },
+
+        "emit": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "maxItems": 200
+        },
+
+        "on_failure": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/failureRule" },
+          "maxItems": 50
+        },
+
+        "extensions": { "type": "object" }
+      },
+
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "approval" } } },
+          "then": { "required": ["approval_key", "target_ref"] }
+        },
+        {
+          "if": { "properties": { "type": { "enum": ["agent", "tool", "render", "quality", "system"] } } },
+          "then": { "required": ["runner"] }
+        }
+      ]
+    },
+
+    "retryPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_attempts": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "retry_on": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["TIMEOUT", "RATE_LIMIT", "TRANSIENT_DB", "TRANSIENT_IO", "WORKER_CRASH", "UNKNOWN"]
+          },
+          "maxItems": 20
+        },
+        "backoff": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "strategy": { "type": "string", "enum": ["fixed", "exponential"], "default": "exponential" },
+            "base_ms": { "type": "integer", "minimum": 0, "maximum": 600000, "default": 2000 },
+            "max_ms": { "type": "integer", "minimum": 0, "maximum": 600000, "default": 60000 }
+          }
+        }
+      }
+    },
+
+    "failureRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action"],
+      "properties": {
+        "if": { "$ref": "#/$defs/whenExpr" },
+        "action": { "type": "string", "enum": ["enqueue", "fail_run", "skip_step", "fallback"] },
+        "step_key": { "type": "string" },
+        "note": { "type": "string", "maxLength": 500 },
+        "extensions": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "action": { "const": "enqueue" } } },
+          "then": { "required": ["step_key"] }
+        }
+      ]
+    },
+
+    "inputMapping": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["from"],
+          "properties": {
+            "from": { "type": "string", "minLength": 1 },
+            "fallback_from": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value"],
+          "properties": {
+            "value": {}
+          }
+        }
+      ]
+    },
+
+    "whenExpr": {
+      "type": "object",
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": ["equals"],
+          "properties": {
+            "equals": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {}
+            }
+          }
+        },
+        {
+          "required": ["exists"],
+          "properties": {
+            "exists": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "required": ["and"],
+          "properties": {
+            "and": { "type": "array", "items": { "$ref": "#/$defs/whenExpr" }, "minItems": 1, "maxItems": 50 }
+          }
+        },
+        {
+          "required": ["or"],
+          "properties": {
+            "or": { "type": "array", "items": { "$ref": "#/$defs/whenExpr" }, "minItems": 1, "maxItems": 50 }
+          }
+        },
+        {
+          "required": ["not"],
+          "properties": {
+            "not": { "$ref": "#/$defs/whenExpr" }
+          }
+        }
+      ]
+    }
+  }
+}

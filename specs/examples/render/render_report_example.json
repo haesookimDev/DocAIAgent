@@ -1,0 +1,28 @@
+{
+  "schema_version": "render_report_v1",
+  "run_id": "run_123",
+  "artifact_version_id": "av_001",
+  "renderer": { "name": "pptx_renderer", "version": "1.0.0" },
+  "time_ms": 8123,
+  "warnings": [
+    {
+      "code": "CHART_LABEL_TRUNCATED",
+      "message": "One or more chart labels were truncated.",
+      "severity": "warning",
+      "slide_id": "s4"
+    }
+  ],
+  "errors": [],
+  "missing_assets": [],
+  "qc_summary": { "overflow": 0, "overlap": 0, "out_of_bounds": 0, "min_font": 0 },
+  "outputs": {
+    "pptx_storage_key": "s3://bucket/artifacts/av_001/deck.pptx",
+    "preview_pdf_storage_key": "s3://bucket/artifacts/av_001/deck.pdf",
+    "layout_plan_storage_key": "s3://bucket/artifacts/av_001/layout_plan.json",
+    "ops_storage_key": "s3://bucket/artifacts/av_001/ops.json",
+    "thumbnails": [
+      { "slide_id": "s1", "storage_key": "s3://bucket/artifacts/av_001/thumbs/s1.png" }
+    ]
+  },
+  "metrics": { "slide_count": 10, "ops_count": 120 }
+}

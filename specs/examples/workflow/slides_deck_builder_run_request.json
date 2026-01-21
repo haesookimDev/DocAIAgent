@@ -1,0 +1,23 @@
+{
+  "project_id": "proj_123",
+  "agent": { "key": "slides.deck_builder", "version": "1.0.0" },
+  "inputs": {
+    "prompt": "Create an executive-ready 2026 business plan deck (10 slides).",
+    "language": "en",
+    "audience": "Executives",
+    "tone": "Concise, data-driven",
+    "file_ids": ["file_aaa", "file_bbb"],
+    "template_id": "tpl_default",
+    "brand_kit_id": "bk_acme",
+    "options": {
+      "slide_count": 10,
+      "require_outline_approval": true,
+      "include_citations": true,
+      "allow_external_web": false
+    }
+  },
+  "artifact": {
+    "mode": "create",
+    "name": "2026 Business Plan (Draft)"
+  }
+}

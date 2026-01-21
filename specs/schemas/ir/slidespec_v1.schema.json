@@ -1,0 +1,363 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workagent.example.com/schemas/ir/slidespec_v1.schema.json",
+  "title": "SlideSpec v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "deck", "slides"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "slidespec_v1" },
+
+    "deck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "language"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "subtitle": { "type": "string", "maxLength": 500 },
+        "language": { "type": "string", "minLength": 2, "maxLength": 20, "description": "BCP-47 tag recommended, e.g., en, ko, en-US." },
+        "audience": { "type": "string", "maxLength": 200 },
+        "tone": { "type": "string", "maxLength": 200 },
+        "metadata": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "template_id": { "type": "string", "minLength": 1 },
+        "brand_kit_id": { "type": "string", "minLength": 1 },
+        "slide_size": { "type": "string", "maxLength": 80 }
+      }
+    },
+
+    "assets": {
+      "type": "array",
+      "maxItems": 2000,
+      "items": { "$ref": "#/$defs/assetRef" },
+      "description": "Optional asset manifest. Renderer can also accept assets_resolved separately."
+    },
+
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/slide" }
+    },
+
+    "extensions": { "type": "object" }
+  },
+
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+
+    "assetRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_id"],
+      "properties": {
+        "asset_id": { "$ref": "#/$defs/id" },
+        "kind": { "type": "string", "enum": ["image", "file", "chart_data", "other"] },
+        "label": { "type": "string", "maxLength": 200 },
+        "hint": { "type": "string", "maxLength": 1000 }
+      }
+    },
+
+    "layoutRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["layout_id"],
+      "properties": {
+        "layout_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "variant": { "type": "string", "maxLength": 120 },
+        "hints": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "evidence_id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "type": "string", "enum": ["evidence", "url", "note"], "default": "evidence" },
+        "evidence_id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "maxLength": 300 },
+        "source": { "type": "string", "maxLength": 300 },
+        "locator": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "page": { "type": "integer", "minimum": 1 },
+            "section": { "type": "string", "maxLength": 200 },
+            "paragraph": { "type": "string", "maxLength": 200 },
+            "timestamp_ms": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "quote": { "type": "string", "maxLength": 2000 },
+        "url": { "type": "string", "format": "uri" },
+        "extensions": { "type": "object" }
+      }
+    },
+
+    "slide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slide_id", "type", "layout", "elements"],
+      "properties": {
+        "slide_id": { "$ref": "#/$defs/id" },
+
+        "type": { "type": "string", "enum": ["title", "section", "content", "closing", "appendix"] },
+
+        "layout": { "$ref": "#/$defs/layoutRef" },
+
+        "title": { "type": "string", "maxLength": 500, "description": "Optional convenience field; title is typically an element." },
+
+        "elements": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 200,
+          "items": { "$ref": "#/$defs/element" }
+        },
+
+        "citations": {
+          "type": "array",
+          "maxItems": 200,
+          "items": { "$ref": "#/$defs/citation" },
+          "description": "Slide-level citations (e.g. footer)."
+        },
+
+        "speaker_notes": { "type": "string", "maxLength": 10000 },
+
+        "extensions": { "type": "object" }
+      }
+    },
+
+    "element": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["element_id", "kind", "content"],
+      "properties": {
+        "element_id": { "$ref": "#/$defs/id" },
+
+        "kind": {
+          "type": "string",
+          "enum": ["text", "bullets", "image", "chart", "table", "shape", "divider"]
+        },
+
+        "role": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Semantic role, e.g., title/subtitle/heading/body/visual/citations."
+        },
+
+        "content": { "type": "object" },
+
+        "citations": {
+          "type": "array",
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/citation" },
+          "description": "Element-level citations."
+        },
+
+        "style_overrides": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "font_family": { "type": "string", "maxLength": 200 },
+            "font_pt": { "type": "number", "minimum": 1, "maximum": 200 },
+            "bold": { "type": "boolean" },
+            "italic": { "type": "boolean" },
+            "color_hex": { "type": "string", "pattern": "^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$" },
+            "align": { "type": "string", "enum": ["left", "center", "right", "justify"] }
+          }
+        },
+
+        "extensions": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "text" } } },
+          "then": { "properties": { "content": { "$ref": "#/$defs/textContent" } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "bullets" } } },
+          "then": { "properties": { "content": { "$ref": "#/$defs/bulletsContent" } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "image" } } },
+          "then": { "properties": { "content": { "$ref": "#/$defs/imageContent" } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "chart" } } },
+          "then": { "properties": { "content": { "$ref": "#/$defs/chartContent" } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "table" } } },
+          "then": { "properties": { "content": { "$ref": "#/$defs/tableContent" } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "shape" } } },
+          "then": { "properties": { "content": { "$ref": "#/$defs/shapeContent" } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "divider" } } },
+          "then": { "properties": { "content": { "$ref": "#/$defs/dividerContent" } } }
+        }
+      ]
+    },
+
+    "textContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 20000 },
+        "format": { "type": "string", "enum": ["plain", "markdown"], "default": "plain" }
+      }
+    },
+
+    "bulletsItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/bulletsItem" },
+          "maxItems": 50
+        }
+      }
+    },
+
+    "bulletsContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items"],
+      "properties": {
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 200,
+          "items": {
+            "oneOf": [
+              { "type": "string", "minLength": 1, "maxLength": 2000 },
+              { "$ref": "#/$defs/bulletsItem" }
+            ]
+          }
+        }
+      }
+    },
+
+    "imageContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "asset_id": { "$ref": "#/$defs/id" },
+        "url": { "type": "string", "format": "uri" },
+        "alt_text": { "type": "string", "maxLength": 500 },
+        "caption": { "type": "string", "maxLength": 500 },
+        "crop_hint": { "type": "string", "enum": ["contain", "cover", "center_crop"] }
+      },
+      "oneOf": [
+        { "required": ["asset_id"] },
+        { "required": ["url"] }
+      ]
+    },
+
+    "chartPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": ["string", "number"] },
+        "y": { "type": "number" }
+      }
+    },
+
+    "chartSeries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "data"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "data": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5000,
+          "items": { "$ref": "#/$defs/chartPoint" }
+        }
+      }
+    },
+
+    "chartContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chart_type", "series"],
+      "properties": {
+        "chart_type": { "type": "string", "enum": ["bar", "line", "pie", "area", "stacked_bar"] },
+        "title": { "type": "string", "maxLength": 200 },
+        "x_label": { "type": "string", "maxLength": 100 },
+        "y_label": { "type": "string", "maxLength": 100 },
+        "series": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 30,
+          "items": { "$ref": "#/$defs/chartSeries" }
+        },
+        "options": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "tableContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["columns", "rows"],
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "columns": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5000,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 50,
+            "items": { "type": ["string", "number", "null"] }
+          }
+        },
+        "options": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "shapeContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shape"],
+      "properties": {
+        "shape": { "type": "string", "enum": ["rect", "circle", "line"] },
+        "style": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "dividerContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "style": { "type": "object", "additionalProperties": true }
+      }
+    }
+  }
+}

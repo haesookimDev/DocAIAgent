@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workagent.example.com/schemas/quality/layout_qc_v1.schema.json",
+  "title": "Layout QC v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "pass", "issue_counts", "issues"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "layout_qc_v1" },
+
+    "pass": { "type": "boolean" },
+
+    "issue_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["overflow", "overlap", "out_of_bounds", "min_font"],
+      "properties": {
+        "overflow": { "type": "integer", "minimum": 0 },
+        "overlap": { "type": "integer", "minimum": 0 },
+        "out_of_bounds": { "type": "integer", "minimum": 0 },
+        "min_font": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "issues": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": { "$ref": "#/$defs/issue" }
+    },
+
+    "metrics": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "slide_count": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "checked_elements": { "type": "integer", "minimum": 0, "maximum": 100000 }
+      }
+    },
+
+    "extensions": { "type": "object" }
+  },
+
+  "$defs": {
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "TEXT_OVERFLOW",
+            "ELEMENT_OVERLAP",
+            "OUT_OF_BOUNDS",
+            "MIN_FONT_VIOLATION",
+            "FOOTER_CITATIONS_OVERFLOW",
+            "UNKNOWN"
+          ]
+        },
+        "severity": { "type": "string", "enum": ["info", "warning", "error"] },
+        "message": { "type": "string", "minLength": 1, "maxLength": 2000 },
+
+        "slide_id": { "type": "string", "maxLength": 120 },
+        "element_id": { "type": "string", "maxLength": 120 },
+
+        "details": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "ratio": { "type": "number", "minimum": 0 },
+            "bbox_in": { "$ref": "#/$defs/bboxIn" },
+            "overlap_with": { "type": "string", "maxLength": 120 },
+            "min_font_pt": { "type": "number", "minimum": 1, "maximum": 200 },
+            "actual_font_pt": { "type": "number", "minimum": 1, "maximum": 200 }
+          }
+        }
+      }
+    },
+
+    "bboxIn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number", "minimum": 0 },
+        "h": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

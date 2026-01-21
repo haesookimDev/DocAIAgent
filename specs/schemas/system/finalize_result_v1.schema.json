@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workagent.example.com/schemas/system/finalize_result_v1.schema.json",
+  "title": "Finalize Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "artifact_id", "artifact_version_id", "status", "outputs"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "finalize_result_v1" },
+
+    "artifact_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "artifact_version_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+
+    "status": { "type": "string", "enum": ["draft", "published", "archived"] },
+
+    "final_ir_storage_key": {
+      "type": "string",
+      "description": "Stored snapshot of the final validated SlideSpec used to render."
+    },
+
+    "inputs_snapshot_storage_key": {
+      "type": "string",
+      "description": "Optional stored snapshot of run inputs, approvals, and key params."
+    },
+
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pptx_storage_key"],
+      "properties": {
+        "pptx_storage_key": { "type": "string", "minLength": 1 },
+        "preview_pdf_storage_key": { "type": "string" },
+        "layout_plan_storage_key": { "type": "string" },
+        "ops_storage_key": { "type": "string" },
+        "render_report_storage_key": { "type": "string" },
+        "thumbnails": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["slide_id", "storage_key"],
+            "properties": {
+              "slide_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "storage_key": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+
+    "checksums": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pptx_sha256": { "type": "string", "minLength": 32, "maxLength": 128 },
+        "ir_sha256": { "type": "string", "minLength": 32, "maxLength": 128 }
+      }
+    },
+
+    "metrics": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "fix_loops": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "total_time_ms": { "type": "integer", "minimum": 0, "maximum": 3600000 }
+      }
+    },
+
+    "extensions": { "type": "object" }
+  }
+}

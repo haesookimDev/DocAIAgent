@@ -1,0 +1,227 @@
+{
+  "spec_version": "workflow_v1",
+  "agent": {
+    "key": "slides.deck_builder",
+    "display_name": "Slides Deck Builder",
+    "category": "slides"
+  },
+  "contracts": {
+    "input_schema_ref": "schema://inputs/slides_deck_builder_v1",
+    "output_ir_schema_ref": "schema://ir/slidespec_v1"
+  },
+  "defaults": {
+    "timeouts_sec": { "agent": 120, "tool": 60, "render": 300, "quality": 30, "system": 60 },
+    "retries": { "agent": 2, "tool": 2, "render": 1, "quality": 0, "system": 0 },
+    "max_fix_loops": 3
+  },
+  "policy_requirements": {
+    "external_web": "optional",
+    "pii_masking": "recommended"
+  },
+  "steps": [
+    {
+      "step_key": "ingest_inputs",
+      "type": "system",
+      "runner": "system.validate_inputs",
+      "timeout_sec": 30,
+      "input": {
+        "inputs": { "from": "run.input.inputs" }
+      },
+      "output": { "schema_ref": "schema://system/validated_inputs_v1", "store_raw_output": false },
+      "emit": ["progress", "log"]
+    },
+    {
+      "step_key": "retrieve_evidence",
+      "type": "tool",
+      "runner": "tool.rag.retrieve",
+      "timeout_sec": 60,
+      "retry_policy": { "max_attempts": 3, "retry_on": ["TIMEOUT", "RATE_LIMIT"] },
+      "input": {
+        "prompt": { "from": "run.input.inputs.prompt" },
+        "file_ids": { "from": "run.input.inputs.file_ids" },
+        "top_k": { "value": 30 }
+      },
+      "output": { "schema_ref": "schema://rag/evidence_list_v1", "store_raw_output": false },
+      "emit": ["progress", "log"]
+    },
+    {
+      "step_key": "outline",
+      "type": "agent",
+      "runner": "agent.outline_v1",
+      "timeout_sec": 120,
+      "retry_policy": { "max_attempts": 2, "retry_on": ["TIMEOUT", "RATE_LIMIT"] },
+      "input": {
+        "prompt": { "from": "run.input.inputs.prompt" },
+        "audience": { "from": "run.input.inputs.audience" },
+        "tone": { "from": "run.input.inputs.tone" },
+        "slide_count": { "from": "run.input.inputs.options.slide_count" },
+        "evidences": { "from": "step.retrieve_evidence.output.evidences" }
+      },
+      "output": { "schema_ref": "schema://ir/outline_v1", "store_raw_output": false },
+      "emit": ["progress", "intermediate:outline"]
+    },
+    {
+      "step_key": "approval_outline",
+      "type": "approval",
+      "approval_key": "outline",
+      "when": { "equals": ["run.input.inputs.options.require_outline_approval", true] },
+      "target_ref": { "from": "step.outline.output" },
+      "editable": true,
+      "timeout_sec": 86400,
+      "output": { "schema_ref": "schema://ir/outline_v1", "store_raw_output": false },
+      "emit": ["progress", "intermediate:outline"]
+    },
+    {
+      "step_key": "plan_slidespec",
+      "type": "agent",
+      "runner": "agent.plan_slidespec_v1",
+      "timeout_sec": 120,
+      "retry_policy": { "max_attempts": 2, "retry_on": ["TIMEOUT", "RATE_LIMIT"] },
+      "input": {
+        "outline": { "from": "step.approval_outline.output", "fallback_from": "step.outline.output" },
+        "evidences": { "from": "step.retrieve_evidence.output.evidences" },
+        "template_id": { "from": "run.input.inputs.template_id" },
+        "brand_kit_id": { "from": "run.input.inputs.brand_kit_id" },
+        "constraints": {
+          "value": {
+            "allowed_layout_ids": [
+              "title_center",
+              "section_header",
+              "one_column",
+              "two_column",
+              "chart_focus",
+              "table_focus",
+              "quote_center",
+              "closing"
+            ]
+          }
+        }
+      },
+      "output": { "schema_ref": "schema://ir/slidespec_v1", "store_raw_output": true },
+      "emit": ["progress", "intermediate:slidespec"],
+      "on_failure": [
+        {
+          "if": { "equals": ["error.code", "SCHEMA_VALIDATION_FAILED"] },
+          "action": "enqueue",
+          "step_key": "repair_slidespec",
+          "note": "Repair invalid SlideSpec JSON to satisfy slidespec_v1 schema."
+        },
+        { "action": "fail_run" }
+      ]
+    },
+    {
+      "step_key": "repair_slidespec",
+      "type": "agent",
+      "runner": "agent.repair_slidespec_v1",
+      "timeout_sec": 120,
+      "retry_policy": { "max_attempts": 1, "retry_on": ["TIMEOUT", "RATE_LIMIT"] },
+      "input": {
+        "invalid_json": { "from": "step.plan_slidespec.output_raw" },
+        "schema_errors": { "from": "step.plan_slidespec.error.schema_errors" },
+        "allowed_layout_ids": {
+          "value": [
+            "title_center",
+            "section_header",
+            "one_column",
+            "two_column",
+            "chart_focus",
+            "table_focus",
+            "quote_center",
+            "closing"
+          ]
+        }
+      },
+      "output": { "schema_ref": "schema://ir/slidespec_v1", "store_raw_output": false },
+      "emit": ["progress", "intermediate:slidespec"]
+    },
+    {
+      "step_key": "render_plan",
+      "type": "system",
+      "runner": "system.compute_layout_plan",
+      "timeout_sec": 60,
+      "input": {
+        "ir": { "from": "step.repair_slidespec.output", "fallback_from": "step.plan_slidespec.output" },
+        "template_id": { "from": "run.input.inputs.template_id" },
+        "brand_kit_id": { "from": "run.input.inputs.brand_kit_id" },
+        "layout_package": { "from": "project.layout_preset_package_ref" }
+      },
+      "output": { "schema_ref": "schema://render/layout_plan_v1", "store_raw_output": false },
+      "emit": ["progress"]
+    },
+    {
+      "step_key": "quality_check_layout_plan",
+      "type": "quality",
+      "runner": "quality.layout_plan_v1",
+      "timeout_sec": 30,
+      "input": {
+        "layout_plan": { "from": "step.render_plan.output" }
+      },
+      "output": { "schema_ref": "schema://quality/layout_qc_v1", "store_raw_output": false },
+      "emit": ["progress", "intermediate:qc"]
+    },
+    {
+      "step_key": "fix_layout",
+      "type": "system",
+      "runner": "system.fix_layout_v1",
+      "timeout_sec": 60,
+      "when": { "equals": ["step.quality_check_layout_plan.output.pass", false] },
+      "input": {
+        "ir": { "from": "step.repair_slidespec.output", "fallback_from": "step.plan_slidespec.output" },
+        "layout_plan": { "from": "step.render_plan.output" },
+        "qc": { "from": "step.quality_check_layout_plan.output" },
+        "max_fix_loops": { "from": "workflow.defaults.max_fix_loops" }
+      },
+      "output": { "schema_ref": "schema://ir/slidespec_v1", "store_raw_output": false },
+      "emit": ["progress", "intermediate:slidespec"]
+    },
+    {
+      "step_key": "render_pptx",
+      "type": "render",
+      "runner": "render.pptx_v1",
+      "timeout_sec": 300,
+      "retry_policy": { "max_attempts": 1, "retry_on": ["WORKER_CRASH", "TRANSIENT_IO"] },
+      "input": {
+        "ir": { "from": "step.fix_layout.output", "fallback_from": "step.repair_slidespec.output" },
+        "template_id": { "from": "run.input.inputs.template_id" },
+        "brand_kit_id": { "from": "run.input.inputs.brand_kit_id" }
+      },
+      "output": { "schema_ref": "schema://render/render_result_v1", "store_raw_output": false },
+      "emit": ["progress", "log"]
+    },
+    {
+      "step_key": "finalize",
+      "type": "system",
+      "runner": "system.finalize_artifact_v1",
+      "timeout_sec": 30,
+      "input": {
+        "render_result": { "from": "step.render_pptx.output" },
+        "final_ir": { "from": "step.fix_layout.output", "fallback_from": "step.repair_slidespec.output" },
+        "template_id": { "from": "run.input.inputs.template_id" },
+        "brand_kit_id": { "from": "run.input.inputs.brand_kit_id" }
+      },
+      "output": { "schema_ref": "schema://system/finalize_result_v1", "store_raw_output": false },
+      "emit": ["progress"]
+    }
+  ],
+  "edges": [
+    { "from": "ingest_inputs", "to": "retrieve_evidence" },
+    { "from": "retrieve_evidence", "to": "outline" },
+    { "from": "outline", "to": "approval_outline" },
+    { "from": "outline", "to": "plan_slidespec" },
+    { "from": "approval_outline", "to": "plan_slidespec" },
+    { "from": "plan_slidespec", "to": "repair_slidespec" },
+    { "from": "plan_slidespec", "to": "render_plan" },
+    { "from": "repair_slidespec", "to": "render_plan" },
+    { "from": "render_plan", "to": "quality_check_layout_plan" },
+    { "from": "quality_check_layout_plan", "to": "fix_layout" },
+    { "from": "quality_check_layout_plan", "to": "render_pptx" },
+    { "from": "fix_layout", "to": "render_pptx" },
+    { "from": "render_pptx", "to": "finalize" }
+  ],
+  "state_mapping": {
+    "planning_steps": ["outline", "approval_outline", "plan_slidespec", "repair_slidespec"],
+    "executing_steps": ["retrieve_evidence"],
+    "rendering_steps": ["render_plan", "render_pptx"],
+    "quality_steps": ["quality_check_layout_plan", "fix_layout"]
+  }
+}

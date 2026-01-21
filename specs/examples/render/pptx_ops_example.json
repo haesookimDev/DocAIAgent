@@ -1,0 +1,38 @@
+{
+  "schema_version": "pptx_ops_v1",
+  "template_id": "tpl_default",
+  "brand_kit_id": "bk_acme",
+  "slide_size": "widescreen_16_9",
+  "slides": [
+    {
+      "slide_id": "s1",
+      "layout_id": "title_center",
+      "background": { "type": "template", "ref": { "layout_id": "title_center" } },
+      "ops": [
+        {
+          "op_id": "s1_op_001",
+          "type": "addText",
+          "element_id": "s1_e1",
+          "text": "2026 Business Plan",
+          "bbox_in": { "x": 1.0, "y": 2.1, "w": 11.3, "h": 1.2 },
+          "style": {
+            "font_family": "Pretendard",
+            "font_pt": 36,
+            "bold": true,
+            "align": "center",
+            "valign": "middle",
+            "color_hex": "#111111"
+          },
+          "z_index": 20
+        },
+        {
+          "op_id": "s1_op_999",
+          "type": "addNotes",
+          "notes": "Evidence: ev_001 (p12).",
+          "z_index": 0
+        }
+      ]
+    }
+  ],
+  "assets": []
+}
