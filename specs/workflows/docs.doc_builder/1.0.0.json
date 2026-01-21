@@ -1,0 +1,151 @@
+{
+  "spec_version": "workflow_v1",
+  "agent": {
+    "key": "docs.doc_builder",
+    "display_name": "Docs Builder",
+    "category": "docs"
+  },
+  "contracts": {
+    "input_schema_ref": "schema://inputs/docs_doc_builder_v1",
+    "output_ir_schema_ref": "schema://ir/docspec_v1"
+  },
+  "defaults": {
+    "timeouts_sec": { "agent": 180, "tool": 60, "render": 300, "quality": 30, "system": 60 },
+    "retries": { "agent": 2, "tool": 2, "render": 1, "quality": 0, "system": 0 },
+    "max_fix_loops": 2
+  },
+  "policy_requirements": {
+    "external_web": "optional",
+    "pii_masking": "recommended"
+  },
+  "steps": [
+    {
+      "step_key": "ingest_inputs",
+      "type": "system",
+      "runner": "system.validate_doc_inputs",
+      "timeout_sec": 30,
+      "input": { "inputs": { "from": "run.input.inputs" } },
+      "output": { "schema_ref": "schema://system/validated_doc_inputs_v1", "store_raw_output": false },
+      "emit": ["progress", "log"]
+    },
+    {
+      "step_key": "retrieve_evidence",
+      "type": "tool",
+      "runner": "tool.rag.retrieve",
+      "timeout_sec": 60,
+      "retry_policy": { "max_attempts": 3, "retry_on": ["TIMEOUT", "RATE_LIMIT"] },
+      "input": {
+        "prompt": { "from": "run.input.inputs.prompt" },
+        "file_ids": { "from": "run.input.inputs.file_ids" },
+        "top_k": { "value": 40 }
+      },
+      "output": { "schema_ref": "schema://rag/evidence_list_v1", "store_raw_output": false },
+      "emit": ["progress", "log"]
+    },
+    {
+      "step_key": "outline",
+      "type": "agent",
+      "runner": "agent.outline_doc_v1",
+      "timeout_sec": 180,
+      "retry_policy": { "max_attempts": 2, "retry_on": ["TIMEOUT", "RATE_LIMIT"] },
+      "input": {
+        "prompt": { "from": "run.input.inputs.prompt" },
+        "target_pages": { "from": "run.input.inputs.options.target_pages" },
+        "evidences": { "from": "step.retrieve_evidence.output.evidences" }
+      },
+      "output": { "schema_ref": "schema://ir/outline_v1", "store_raw_output": false },
+      "emit": ["progress", "intermediate:outline"]
+    },
+    {
+      "step_key": "approval_outline",
+      "type": "approval",
+      "approval_key": "outline",
+      "when": { "equals": ["run.input.inputs.options.require_outline_approval", true] },
+      "target_ref": { "from": "step.outline.output" },
+      "editable": true,
+      "timeout_sec": 86400,
+      "output": { "schema_ref": "schema://ir/outline_v1", "store_raw_output": false },
+      "emit": ["progress", "intermediate:outline"]
+    },
+    {
+      "step_key": "plan_docspec",
+      "type": "agent",
+      "runner": "agent.plan_docspec_v1",
+      "timeout_sec": 180,
+      "retry_policy": { "max_attempts": 2, "retry_on": ["TIMEOUT", "RATE_LIMIT"] },
+      "input": {
+        "outline": { "from": "step.approval_outline.output", "fallback_from": "step.outline.output" },
+        "evidences": { "from": "step.retrieve_evidence.output.evidences" },
+        "template_id": { "from": "run.input.inputs.template_id" },
+        "brand_kit_id": { "from": "run.input.inputs.brand_kit_id" }
+      },
+      "output": { "schema_ref": "schema://ir/docspec_v1", "store_raw_output": true },
+      "emit": ["progress", "intermediate:docspec"],
+      "on_failure": [
+        {
+          "if": { "equals": ["error.code", "SCHEMA_VALIDATION_FAILED"] },
+          "action": "enqueue",
+          "step_key": "repair_docspec",
+          "note": "Repair invalid DocSpec JSON."
+        },
+        { "action": "fail_run" }
+      ]
+    },
+    {
+      "step_key": "repair_docspec",
+      "type": "agent",
+      "runner": "agent.repair_docspec_v1",
+      "timeout_sec": 180,
+      "retry_policy": { "max_attempts": 1, "retry_on": ["TIMEOUT", "RATE_LIMIT"] },
+      "input": {
+        "invalid_json": { "from": "step.plan_docspec.output_raw" },
+        "schema_errors": { "from": "step.plan_docspec.error.schema_errors" }
+      },
+      "output": { "schema_ref": "schema://ir/docspec_v1", "store_raw_output": false },
+      "emit": ["progress", "intermediate:docspec"]
+    },
+    {
+      "step_key": "render_docx",
+      "type": "render",
+      "runner": "render.docx_v1",
+      "timeout_sec": 300,
+      "retry_policy": { "max_attempts": 1, "retry_on": ["WORKER_CRASH", "TRANSIENT_IO"] },
+      "input": {
+        "ir": { "from": "step.repair_docspec.output", "fallback_from": "step.plan_docspec.output" },
+        "template_id": { "from": "run.input.inputs.template_id" },
+        "brand_kit_id": { "from": "run.input.inputs.brand_kit_id" }
+      },
+      "output": { "schema_ref": "schema://render/doc_render_result_v1", "store_raw_output": false },
+      "emit": ["progress", "log"]
+    },
+    {
+      "step_key": "finalize",
+      "type": "system",
+      "runner": "system.finalize_doc_artifact_v1",
+      "timeout_sec": 30,
+      "input": {
+        "render_result": { "from": "step.render_docx.output" },
+        "final_ir": { "from": "step.repair_docspec.output", "fallback_from": "step.plan_docspec.output" }
+      },
+      "output": { "schema_ref": "schema://system/doc_finalize_result_v1", "store_raw_output": false },
+      "emit": ["progress"]
+    }
+  ],
+  "edges": [
+    { "from": "ingest_inputs", "to": "retrieve_evidence" },
+    { "from": "retrieve_evidence", "to": "outline" },
+    { "from": "outline", "to": "approval_outline" },
+    { "from": "outline", "to": "plan_docspec" },
+    { "from": "approval_outline", "to": "plan_docspec" },
+    { "from": "plan_docspec", "to": "repair_docspec" },
+    { "from": "plan_docspec", "to": "render_docx" },
+    { "from": "repair_docspec", "to": "render_docx" },
+    { "from": "render_docx", "to": "finalize" }
+  ],
+  "state_mapping": {
+    "planning_steps": ["outline", "approval_outline", "plan_docspec", "repair_docspec"],
+    "executing_steps": ["retrieve_evidence"],
+    "rendering_steps": ["render_docx"],
+    "quality_steps": []
+  }
+}
