@@ -1,39 +1,75 @@
-{# Chart Focus Layout - 차트 중심 슬라이드 #}
-<div class="slide slide-chart-focus" data-slide-id="{{ slide_id }}" data-layout="chart_focus">
-    <div class="slide-content">
-        <div class="slide-header">
+{# Chart Focus Layout - 차트 중심 슬라이드 (Tailwind) #}
+<div class="slide bg-white relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl"
+     data-slide-id="{{ slide_id }}" data-layout="chart_focus">
+
+    <!-- Top accent bar -->
+    <div class="absolute top-0 left-0 right-0 h-1 gradient-primary"></div>
+
+    <!-- Content -->
+    <div class="h-full flex flex-col px-12 py-10">
+        <!-- Header -->
+        <div class="mb-6">
             {% set ns = namespace(found=false) %}
             {% for element in elements %}
                 {% if element.role == 'title' and not ns.found %}
-                    <h2 class="heading animate-in">{{ element.content.text }}</h2>
+                    <h2 class="text-2xl font-bold text-slate-800 animate-slide-up flex items-center gap-3">
+                        <span class="w-1.5 h-8 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
+                        {{ element.content.text }}
+                    </h2>
                     {% set ns.found = true %}
                 {% endif %}
             {% endfor %}
         </div>
 
-        <div class="slide-body" style="display: flex; gap: 30px;">
-            {# Chart area (left, larger) #}
-            <div style="flex: 2;">
+        <!-- Chart Body - Two Column Layout -->
+        <div class="flex-1 grid grid-cols-3 gap-8">
+            {# Chart area (left, larger - 2 cols) #}
+            <div class="col-span-2">
                 {% set chart_ns = namespace(found=false) %}
                 {% for element in elements %}
                     {% if element.kind == 'chart' and not chart_ns.found %}
-                        <div class="chart-container animate-in" style="height: 350px;">
+                        <div class="h-full chart-gradient rounded-xl p-6 flex flex-col animate-fade-in relative">
                             {% if element.content.title %}
-                                <div style="position: absolute; top: 15px; left: 15px; font-weight: 600;">
-                                    {{ element.content.title }}
+                                <div class="absolute top-4 left-5">
+                                    <p class="font-semibold text-slate-700 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                        </svg>
+                                        {{ element.content.title }}
+                                    </p>
                                 </div>
                             {% endif %}
-                            <div style="text-align: center;">
-                                <p style="font-size: 24px; color: var(--primary-color);">{{ element.content.chart_type | upper }} CHART</p>
-                                <p style="font-size: 14px; margin-top: 10px;">
-                                    {% for series in element.content.series %}
-                                        {{ series.name }}{% if not loop.last %}, {% endif %}
-                                    {% endfor %}
+                            <div class="flex-1 flex flex-col items-center justify-center">
+                                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-accent flex items-center justify-center mb-4">
+                                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        {% if element.content.chart_type == 'pie' %}
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                                        {% elif element.content.chart_type == 'line' %}
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4v16" />
+                                        {% else %}
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                        {% endif %}
+                                    </svg>
+                                </div>
+                                <p class="text-xl font-semibold text-primary-600 uppercase tracking-wider">
+                                    {{ element.content.chart_type }} Chart
                                 </p>
+                                <div class="flex flex-wrap justify-center gap-3 mt-4">
+                                    {% for series in element.content.series %}
+                                        <span class="bg-white px-3 py-1 rounded-full text-sm text-slate-600 shadow-sm border border-slate-200">
+                                            {{ series.name }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
                                 {% if element.content.x_label or element.content.y_label %}
-                                    <p style="font-size: 12px; margin-top: 5px; color: var(--light-text);">
-                                        {% if element.content.x_label %}X: {{ element.content.x_label }}{% endif %}
-                                        {% if element.content.y_label %} | Y: {{ element.content.y_label }}{% endif %}
+                                    <p class="text-xs text-slate-400 mt-3 flex items-center gap-3">
+                                        {% if element.content.x_label %}
+                                            <span class="bg-slate-100 px-2 py-0.5 rounded">X: {{ element.content.x_label }}</span>
+                                        {% endif %}
+                                        {% if element.content.y_label %}
+                                            <span class="bg-slate-100 px-2 py-0.5 rounded">Y: {{ element.content.y_label }}</span>
+                                        {% endif %}
                                     </p>
                                 {% endif %}
                             </div>
@@ -43,26 +79,36 @@
                 {% endfor %}
             </div>
 
-            {# Key insights (right, smaller) #}
-            <div style="flex: 1;">
+            {# Key insights (right, smaller - 1 col) #}
+            <div class="col-span-1">
                 {% set insight_ns = namespace(found=false) %}
                 {% for element in elements %}
                     {% if element.kind == 'bullets' and not insight_ns.found %}
-                        <div style="margin-bottom: 15px;">
-                            <p style="font-weight: 600; font-size: 14px; margin-bottom: 10px; color: var(--primary-color);">Key Insights</p>
-                            <ul class="bullets animate-in" style="font-size: 14px;">
+                        <div class="bg-slate-50 rounded-xl p-5 h-full animate-slide-up delay-100">
+                            <p class="font-semibold text-sm text-primary-600 mb-4 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                                Key Insights
+                            </p>
+                            <ul class="space-y-3">
                                 {% for item in element.content['items'] %}
-                                    {% if item is string %}
-                                        <li style="margin-bottom: 8px;">{{ item }}</li>
-                                    {% else %}
-                                        <li style="margin-bottom: 8px;">{{ item.text }}</li>
-                                    {% endif %}
+                                    <li class="flex items-start gap-2 text-sm text-slate-600">
+                                        <span class="w-1.5 h-1.5 mt-2 bg-gradient-to-r from-primary-500 to-accent rounded-full flex-shrink-0"></span>
+                                        {% if item is string %}
+                                            <span>{{ item }}</span>
+                                        {% else %}
+                                            <span>{{ item.text }}</span>
+                                        {% endif %}
+                                    </li>
                                 {% endfor %}
                             </ul>
                         </div>
                         {% set insight_ns.found = true %}
                     {% elif element.kind == 'text' and element.role != 'title' and not insight_ns.found %}
-                        <p class="body-text animate-in" style="font-size: 14px;">{{ element.content.text }}</p>
+                        <div class="bg-slate-50 rounded-xl p-5 h-full animate-slide-up delay-100">
+                            <p class="text-sm text-slate-600 leading-relaxed">{{ element.content.text }}</p>
+                        </div>
                         {% set insight_ns.found = true %}
                     {% endif %}
                 {% endfor %}
@@ -70,19 +116,19 @@
         </div>
     </div>
 
-    {% if citations %}
-    <div class="slide-footer">
-        <span class="citations">
+    <!-- Footer -->
+    <div class="absolute bottom-3 left-8 right-8 flex justify-between items-center text-xs border-t border-slate-100 pt-3">
+        {% if citations %}
+        <span class="text-slate-400 flex gap-2 flex-wrap">
             {% for citation in citations %}
-                <span class="citation-ref">[{{ loop.index }}] {{ citation.source | default(citation.title | default('')) }}</span>{% if not loop.last %}, {% endif %}
+                <span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded" title="{{ citation.source | default(citation.title | default('')) }}">
+                    [{{ loop.index }}]
+                </span>
             {% endfor %}
         </span>
-        <span class="slide-number">{{ slide_index + 1 }}</span>
-    </div>
-    {% else %}
-    <div class="slide-footer">
+        {% else %}
         <span></span>
-        <span class="slide-number">{{ slide_index + 1 }}</span>
+        {% endif %}
+        <span class="bg-slate-100 text-slate-500 px-2.5 py-0.5 rounded-full font-medium">{{ slide_index + 1 }}</span>
     </div>
-    {% endif %}
 </div>

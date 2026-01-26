@@ -1,54 +1,68 @@
-{# Closing Layout - 마무리 슬라이드 #}
-<div class="slide slide-closing" data-slide-id="{{ slide_id }}" data-layout="closing">
-    <div class="slide-content" style="justify-content: center; align-items: center; text-align: center;">
+{# Closing Layout - 마무리 슬라이드 (Tailwind) #}
+<div class="slide gradient-accent relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl"
+     data-slide-id="{{ slide_id }}" data-layout="closing">
+
+    <!-- Decorative elements -->
+    <div class="absolute inset-0">
+        <div class="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/3"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-white/10 rounded-full"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="relative h-full flex flex-col justify-center items-center text-center px-16 py-12">
         {% set has_title = false %}
         {% for element in elements %}
             {% if element.role == 'title' or (element.kind == 'text' and loop.first) %}
                 {% set has_title = true %}
-                <h1 class="title animate-in" style="font-size: 42px; margin-bottom: 30px;">
+                <h1 class="text-5xl font-bold text-white mb-6 animate-slide-up tracking-tight">
                     {{ element.content.text }}
                 </h1>
             {% endif %}
         {% endfor %}
 
         {% if not has_title %}
-            <h1 class="title animate-in" style="font-size: 42px; margin-bottom: 30px;">
+            <h1 class="text-5xl font-bold text-white mb-6 animate-slide-up tracking-tight">
                 감사합니다
             </h1>
         {% endif %}
 
+        <!-- Accent line -->
+        <div class="w-20 h-1 bg-white/30 rounded-full mb-8 animate-fade-in"></div>
+
         {% for element in elements %}
             {% if element.role != 'title' and not loop.first %}
                 {% if element.kind == 'text' %}
-                    <p class="subtitle animate-in" style="font-size: 20px; margin-bottom: 15px; max-width: 600px;">
+                    <p class="text-lg text-white/80 max-w-lg mb-4 animate-fade-in delay-100">
                         {{ element.content.text }}
                     </p>
                 {% elif element.kind == 'bullets' %}
-                    <div class="animate-in" style="text-align: left; margin-top: 20px;">
-                        <ul class="bullets" style="font-size: 16px;">
-                            {% for item in element.content['items'] %}
+                    <ul class="text-left space-y-2 animate-slide-up delay-200">
+                        {% for item in element.content['items'] %}
+                            <li class="flex items-center gap-3 text-white/80">
+                                <span class="w-1.5 h-1.5 bg-white/60 rounded-full"></span>
                                 {% if item is string %}
-                                    <li>{{ item }}</li>
+                                    {{ item }}
                                 {% else %}
-                                    <li>{{ item.text }}</li>
+                                    {{ item.text }}
                                 {% endif %}
-                            {% endfor %}
-                        </ul>
-                    </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
                 {% endif %}
             {% endif %}
         {% endfor %}
 
-        {# Contact info or additional details #}
-        <div class="animate-in" style="margin-top: 50px; padding-top: 30px; border-top: 1px solid var(--border-color);">
-            <p style="font-size: 14px; color: var(--light-text);">
+        <!-- Contact info -->
+        <div class="mt-10 pt-6 border-t border-white/20 animate-fade-in delay-300">
+            <p class="text-sm text-white/50">
                 Questions? Contact us for more information.
             </p>
         </div>
     </div>
 
-    <div class="slide-footer">
-        <span></span>
-        <span class="slide-number">{{ slide_index + 1 }}</span>
+    <!-- Footer -->
+    <div class="absolute bottom-4 left-8 right-8 flex justify-end">
+        <span class="bg-white/10 text-white/60 px-3 py-1 rounded-full text-xs font-medium">{{ slide_index + 1 }}</span>
     </div>
 </div>

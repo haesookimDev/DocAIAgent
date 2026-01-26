@@ -1,38 +1,60 @@
-{# Table Focus Layout - 표 중심 슬라이드 #}
-<div class="slide slide-table-focus" data-slide-id="{{ slide_id }}" data-layout="table_focus">
-    <div class="slide-content">
-        <div class="slide-header">
+{# Table Focus Layout - 표 중심 슬라이드 (Tailwind) #}
+<div class="slide bg-white relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl"
+     data-slide-id="{{ slide_id }}" data-layout="table_focus">
+
+    <!-- Top accent bar -->
+    <div class="absolute top-0 left-0 right-0 h-1 gradient-primary"></div>
+
+    <!-- Content -->
+    <div class="h-full flex flex-col px-12 py-10">
+        <!-- Header -->
+        <div class="mb-6">
             {% set ns = namespace(found=false) %}
             {% for element in elements %}
                 {% if element.role == 'title' and not ns.found %}
-                    <h2 class="heading animate-in">{{ element.content.text }}</h2>
+                    <h2 class="text-2xl font-bold text-slate-800 animate-slide-up flex items-center gap-3">
+                        <span class="w-1.5 h-8 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
+                        {{ element.content.text }}
+                    </h2>
                     {% set ns.found = true %}
                 {% endif %}
             {% endfor %}
         </div>
 
-        <div class="slide-body">
+        <!-- Table Body -->
+        <div class="flex-1 overflow-auto">
             {% for element in elements %}
                 {% if element.kind == 'table' %}
-                    <div class="table-container animate-in">
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm animate-fade-in">
                         {% if element.content.title %}
-                            <p style="font-weight: 600; margin-bottom: 12px; font-size: 16px;">{{ element.content.title }}</p>
+                            <div class="px-5 py-3 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                                <p class="font-semibold text-slate-700 flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    {{ element.content.title }}
+                                </p>
+                            </div>
                         {% endif %}
-                        <table style="font-size: 13px;">
+                        <table class="w-full text-sm">
                             <thead>
-                                <tr>
+                                <tr class="bg-gradient-to-r from-primary-600 to-primary-700">
                                     {% for col in element.content.columns %}
-                                        <th style="padding: 10px 12px;">{{ col }}</th>
+                                        <th class="px-5 py-3 text-left text-white font-semibold first:rounded-tl-none last:rounded-tr-none">
+                                            {{ col }}
+                                        </th>
                                     {% endfor %}
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="divide-y divide-slate-100">
                                 {% for row in element.content.rows %}
-                                    <tr>
+                                    <tr class="hover:bg-primary-50/50 transition-colors group">
                                         {% for cell in row %}
-                                            <td style="padding: 8px 12px;">
+                                            <td class="px-5 py-3 text-slate-600 group-hover:text-slate-800 transition-colors">
                                                 {% if cell is number %}
-                                                    {{ "{:,.0f}".format(cell) if cell == cell|int else "{:,.2f}".format(cell) }}
+                                                    <span class="font-medium text-primary-600">
+                                                        {{ "{:,.0f}".format(cell) if cell == cell|int else "{:,.2f}".format(cell) }}
+                                                    </span>
                                                 {% else %}
                                                     {{ cell if cell is not none else '-' }}
                                                 {% endif %}
@@ -49,7 +71,10 @@
             {# Additional notes below table #}
             {% for element in elements %}
                 {% if element.kind == 'text' and element.role != 'title' %}
-                    <p class="body-text animate-in" style="font-size: 14px; margin-top: 20px; color: var(--light-text);">
+                    <p class="text-sm text-slate-500 mt-5 flex items-start gap-2 animate-fade-in delay-100">
+                        <svg class="w-4 h-4 mt-0.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                         {{ element.content.text }}
                     </p>
                 {% endif %}
@@ -57,19 +82,19 @@
         </div>
     </div>
 
-    {% if citations %}
-    <div class="slide-footer">
-        <span class="citations">
+    <!-- Footer -->
+    <div class="absolute bottom-3 left-8 right-8 flex justify-between items-center text-xs border-t border-slate-100 pt-3">
+        {% if citations %}
+        <span class="text-slate-400 flex gap-2 flex-wrap">
             {% for citation in citations %}
-                <span class="citation-ref">[{{ loop.index }}] {{ citation.source | default('') }}</span>{% if not loop.last %}, {% endif %}
+                <span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded" title="{{ citation.source | default('') }}">
+                    [{{ loop.index }}]
+                </span>
             {% endfor %}
         </span>
-        <span class="slide-number">{{ slide_index + 1 }}</span>
-    </div>
-    {% else %}
-    <div class="slide-footer">
+        {% else %}
         <span></span>
-        <span class="slide-number">{{ slide_index + 1 }}</span>
+        {% endif %}
+        <span class="bg-slate-100 text-slate-500 px-2.5 py-0.5 rounded-full font-medium">{{ slide_index + 1 }}</span>
     </div>
-    {% endif %}
 </div>
