@@ -2,10 +2,11 @@
 <div class="slide slide-chart-focus" data-slide-id="{{ slide_id }}" data-layout="chart_focus">
     <div class="slide-content">
         <div class="slide-header">
+            {% set ns = namespace(found=false) %}
             {% for element in elements %}
-                {% if element.role == 'title' %}
+                {% if element.role == 'title' and not ns.found %}
                     <h2 class="heading animate-in">{{ element.content.text }}</h2>
-                    {% break %}
+                    {% set ns.found = true %}
                 {% endif %}
             {% endfor %}
         </div>
@@ -13,8 +14,9 @@
         <div class="slide-body" style="display: flex; gap: 30px;">
             {# Chart area (left, larger) #}
             <div style="flex: 2;">
+                {% set chart_ns = namespace(found=false) %}
                 {% for element in elements %}
-                    {% if element.kind == 'chart' %}
+                    {% if element.kind == 'chart' and not chart_ns.found %}
                         <div class="chart-container animate-in" style="height: 350px;">
                             {% if element.content.title %}
                                 <div style="position: absolute; top: 15px; left: 15px; font-weight: 600;">
@@ -36,19 +38,20 @@
                                 {% endif %}
                             </div>
                         </div>
-                        {% break %}
+                        {% set chart_ns.found = true %}
                     {% endif %}
                 {% endfor %}
             </div>
 
             {# Key insights (right, smaller) #}
             <div style="flex: 1;">
+                {% set insight_ns = namespace(found=false) %}
                 {% for element in elements %}
-                    {% if element.kind == 'bullets' %}
+                    {% if element.kind == 'bullets' and not insight_ns.found %}
                         <div style="margin-bottom: 15px;">
                             <p style="font-weight: 600; font-size: 14px; margin-bottom: 10px; color: var(--primary-color);">Key Insights</p>
                             <ul class="bullets animate-in" style="font-size: 14px;">
-                                {% for item in element.content.items %}
+                                {% for item in element.content['items'] %}
                                     {% if item is string %}
                                         <li style="margin-bottom: 8px;">{{ item }}</li>
                                     {% else %}
@@ -57,10 +60,10 @@
                                 {% endfor %}
                             </ul>
                         </div>
-                        {% break %}
-                    {% elif element.kind == 'text' and element.role != 'title' %}
+                        {% set insight_ns.found = true %}
+                    {% elif element.kind == 'text' and element.role != 'title' and not insight_ns.found %}
                         <p class="body-text animate-in" style="font-size: 14px;">{{ element.content.text }}</p>
-                        {% break %}
+                        {% set insight_ns.found = true %}
                     {% endif %}
                 {% endfor %}
             </div>

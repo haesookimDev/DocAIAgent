@@ -2,10 +2,11 @@
 <div class="slide slide-table-focus" data-slide-id="{{ slide_id }}" data-layout="table_focus">
     <div class="slide-content">
         <div class="slide-header">
+            {% set ns = namespace(found=false) %}
             {% for element in elements %}
-                {% if element.role == 'title' %}
+                {% if element.role == 'title' and not ns.found %}
                     <h2 class="heading animate-in">{{ element.content.text }}</h2>
-                    {% break %}
+                    {% set ns.found = true %}
                 {% endif %}
             {% endfor %}
         </div>
@@ -42,7 +43,6 @@
                             </tbody>
                         </table>
                     </div>
-                    {% break %}
                 {% endif %}
             {% endfor %}
 

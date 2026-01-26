@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocAIAgent - AI Document Generator</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <h1>DocAIAgent</h1>
+            <p>AI-powered Document & Presentation Generator</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Input Panel -->
+            <section class="input-panel">
+                <h2>New Presentation</h2>
+
+                <form id="generateForm">
+                    <div class="form-group">
+                        <label for="prompt">What do you want to create?</label>
+                        <textarea
+                            id="prompt"
+                            name="prompt"
+                            rows="4"
+                            placeholder="e.g., 2024년 사업계획 발표자료를 만들어줘. 임원 보고용으로 핵심 전략과 재무 목표를 포함해줘."
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="language">Language</label>
+                            <select id="language" name="language">
+                                <option value="ko" selected>Korean (한국어)</option>
+                                <option value="en">English</option>
+                                <option value="ja">Japanese (日本語)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="slideCount">Slide Count</label>
+                            <input
+                                type="number"
+                                id="slideCount"
+                                name="slide_count"
+                                min="3"
+                                max="30"
+                                value="10"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="audience">Target Audience</label>
+                            <input
+                                type="text"
+                                id="audience"
+                                name="audience"
+                                placeholder="e.g., 임원진, 투자자, 팀원"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tone">Tone & Style</label>
+                            <input
+                                type="text"
+                                id="tone"
+                                name="tone"
+                                placeholder="e.g., 간결하고 수치 기반, 친근한"
+                            >
+                        </div>
+                    </div>
+
+                    <button type="submit" id="generateBtn" class="btn btn-primary">
+                        <span class="btn-text">Generate Presentation</span>
+                        <span class="btn-loading" style="display: none;">
+                            <span class="spinner"></span> Generating...
+                        </span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Preview Panel -->
+            <section class="preview-panel">
+                <div class="preview-header">
+                    <h2>Preview</h2>
+                    <div class="preview-actions" id="previewActions" style="display: none;">
+                        <button class="btn btn-secondary" id="downloadPptx">
+                            Download PPTX
+                        </button>
+                        <button class="btn btn-secondary" id="downloadDocx">
+                            Download DOCX
+                        </button>
+                        <button class="btn btn-secondary" id="downloadHtml">
+                            Download HTML
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress -->
+                <div class="progress-container" id="progressContainer" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">Preparing...</p>
+                </div>
+
+                <!-- Slides Container -->
+                <div class="slides-container" id="slidesContainer">
+                    <div class="empty-state">
+                        <p>Enter your prompt and click "Generate Presentation" to start.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <span id="statusText">Ready</span>
+            <span id="runInfo"></span>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

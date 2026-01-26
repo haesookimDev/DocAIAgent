@@ -2,10 +2,11 @@
 <div class="slide slide-two-column" data-slide-id="{{ slide_id }}" data-layout="two_column">
     <div class="slide-content">
         <div class="slide-header">
+            {% set ns = namespace(found=false) %}
             {% for element in elements %}
-                {% if element.role == 'title' %}
+                {% if element.role == 'title' and not ns.found %}
                     <h2 class="heading animate-in">{{ element.content.text }}</h2>
-                    {% break %}
+                    {% set ns.found = true %}
                 {% endif %}
             {% endfor %}
         </div>
@@ -30,7 +31,7 @@
                                 </p>
                             {% elif element.kind == 'bullets' %}
                                 <ul class="bullets animate-in">
-                                    {% for item in element.content.items %}
+                                    {% for item in element.content['items'] %}
                                         {% if item is string %}
                                             <li>{{ item }}</li>
                                         {% else %}
@@ -67,7 +68,7 @@
                                 </p>
                             {% elif element.kind == 'bullets' %}
                                 <ul class="bullets animate-in">
-                                    {% for item in element.content.items %}
+                                    {% for item in element.content['items'] %}
                                         {% if item is string %}
                                             <li>{{ item }}</li>
                                         {% else %}

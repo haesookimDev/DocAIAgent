@@ -26,7 +26,7 @@
                 {% elif element.kind == 'bullets' %}
                     <div class="animate-in" style="text-align: left; margin-top: 20px;">
                         <ul class="bullets" style="font-size: 16px;">
-                            {% for item in element.content.items %}
+                            {% for item in element.content['items'] %}
                                 {% if item is string %}
                                     <li>{{ item }}</li>
                                 {% else %}
