@@ -309,6 +309,12 @@ async function downloadArtifact(format) {
         return;
     }
 
+    // For PPTX, use SSE with progress
+    if (format === 'pptx') {
+        await downloadPptxWithProgress();
+        return;
+    }
+
     updateStatus(`Downloading ${format.toUpperCase()}...`);
 
     try {
@@ -348,6 +354,120 @@ async function downloadArtifact(format) {
         updateStatus(`Download error: ${error.message}`);
         alert(`Failed to download: ${error.message}`);
     }
+}
+
+// PPTX download with progress tracking via SSE
+async function downloadPptxWithProgress() {
+    // Show progress modal
+    showExportProgressModal();
+
+    const eventSource = new EventSource(
+        `${API_BASE}/artifacts/${currentArtifactId}/export-stream?format=pptx`
+    );
+
+    eventSource.addEventListener('progress', (event) => {
+        const data = JSON.parse(event.data);
+        updateExportProgress(data.current, data.total, data.status);
+    });
+
+    eventSource.addEventListener('complete', (event) => {
+        const data = JSON.parse(event.data);
+        eventSource.close();
+
+        // Convert base64 to blob and download
+        const binaryString = atob(data.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], {
+            type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        });
+
+        // Trigger download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = data.filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        updateExportProgress(data.total || 1, data.total || 1, 'Download complete!');
+        setTimeout(() => {
+            hideExportProgressModal();
+            updateStatus(`Downloaded ${data.filename}`);
+        }, 1000);
+    });
+
+    eventSource.addEventListener('error', (event) => {
+        eventSource.close();
+        hideExportProgressModal();
+
+        try {
+            const data = JSON.parse(event.data);
+            alert(`Export failed: ${data.message}`);
+            updateStatus(`Export error: ${data.message}`);
+        } catch {
+            alert('Export failed. Please try again.');
+            updateStatus('Export error');
+        }
+    });
+
+    eventSource.onerror = (error) => {
+        eventSource.close();
+        hideExportProgressModal();
+        console.error('SSE error:', error);
+        alert('Connection lost during export. Please try again.');
+        updateStatus('Export error');
+    };
+}
+
+function showExportProgressModal() {
+    let modal = document.getElementById('exportProgressModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'exportProgressModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-backdrop"></div>
+            <div class="modal-content" style="max-width: 450px;">
+                <div class="modal-header">
+                    <h3>Exporting Presentation</h3>
+                </div>
+                <div class="modal-body" style="padding: 24px;">
+                    <div class="export-progress-container">
+                        <div class="export-progress-status" id="exportProgressStatus">Initializing...</div>
+                        <div class="export-progress-bar">
+                            <div class="export-progress-fill" id="exportProgressFill" style="width: 0%"></div>
+                        </div>
+                        <div class="export-progress-text" id="exportProgressText">0 / 0 slides</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
+}
+
+function hideExportProgressModal() {
+    const modal = document.getElementById('exportProgressModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function updateExportProgress(current, total, status) {
+    const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+    const fill = document.getElementById('exportProgressFill');
+    const text = document.getElementById('exportProgressText');
+    const statusEl = document.getElementById('exportProgressStatus');
+
+    if (fill) fill.style.width = `${percent}%`;
+    if (text) text.textContent = `${current} / ${total} slides`;
+    if (statusEl) statusEl.textContent = status;
 }
 
 // ==================== SLIDE EDITING ====================
@@ -1257,6 +1377,165 @@ function createChart(canvas, chartData) {
     new Chart(canvas, config);
 }
 
+// ==================== SAVED DOCUMENTS ====================
+
+async function openSavedDocuments() {
+    const modal = document.getElementById('savedDocsModal');
+    modal.style.display = 'flex';
+
+    const listContainer = document.getElementById('savedDocsList');
+    listContainer.innerHTML = '<p style="text-align: center; color: #6b7280;">Loading...</p>';
+
+    try {
+        const response = await fetch(`${API_BASE}/artifacts?limit=50`);
+        if (!response.ok) throw new Error('Failed to load documents');
+
+        const data = await response.json();
+        const items = data.items || [];
+
+        if (items.length === 0) {
+            listContainer.innerHTML = `
+                <div class="saved-docs-empty">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p>No saved documents yet</p>
+                    <p style="font-size: 12px; margin-top: 8px;">Generate a new presentation to get started</p>
+                </div>
+            `;
+            return;
+        }
+
+        listContainer.innerHTML = items.map(item => `
+            <div class="saved-doc-item" onclick="loadDocument('${item.artifact_id}')">
+                <div class="saved-doc-info">
+                    <div class="saved-doc-title">${item.title || 'Untitled'}</div>
+                    <div class="saved-doc-meta">
+                        <span>📊 ${item.slide_count || 0} slides</span>
+                        <span>📅 ${formatDate(item.created_at)}</span>
+                    </div>
+                </div>
+                <div class="saved-doc-actions">
+                    <button class="btn btn-secondary" onclick="event.stopPropagation(); loadDocument('${item.artifact_id}')">
+                        Open
+                    </button>
+                    <button class="btn btn-secondary" style="background: #fee2e2; color: #dc2626; border-color: #fecaca;" onclick="event.stopPropagation(); deleteDocument('${item.artifact_id}')">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error loading saved documents:', error);
+        listContainer.innerHTML = '<p style="text-align: center; color: #dc3545;">Failed to load documents</p>';
+    }
+}
+
+function closeSavedDocuments() {
+    document.getElementById('savedDocsModal').style.display = 'none';
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return 'Unknown';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 'Unknown';
+    return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+async function loadDocument(artifactId) {
+    closeSavedDocuments();
+    updateStatus(`Loading document...`);
+
+    try {
+        // Fetch the slidespec
+        const response = await fetch(`${API_BASE}/artifacts/${artifactId}/slidespec`);
+        if (!response.ok) throw new Error('Failed to load document');
+
+        const slidespec = await response.json();
+
+        // Reset UI
+        slidesContainer.innerHTML = '';
+        previewActions.style.display = 'flex';
+        progressContainer.style.display = 'none';
+        currentArtifactId = artifactId;
+        currentRunId = artifactId;
+        slideListData = [];
+
+        // Render all slides
+        const renderer_response = await fetch(`${API_BASE}/artifacts/${artifactId}/slides`);
+        const slidesData = await renderer_response.json();
+
+        for (let i = 0; i < slidespec.slides.length; i++) {
+            const slideResponse = await fetch(`${API_BASE}/artifacts/${artifactId}/slides/${i}`);
+            const slideData = await slideResponse.json();
+
+            // Get slide info for slide list
+            const slideInfo = slidesData.slides[i] || {};
+
+            addSlide(
+                slideData.slide_id,
+                i,
+                slideData.html,
+                slidespec.slides[i]
+            );
+
+            slideListData[i] = {
+                index: i,
+                slide_id: slideData.slide_id,
+                type: slideInfo.type || 'content',
+                layout: slideInfo.layout || 'one_column',
+                title: slideInfo.title || '',
+            };
+        }
+
+        updateStatus(`Loaded: ${slidespec.deck?.title || 'Untitled'}`);
+        runInfo.textContent = `Artifact: ${artifactId.substring(0, 8)}...`;
+
+    } catch (error) {
+        console.error('Error loading document:', error);
+        updateStatus(`Error: ${error.message}`);
+        alert('Failed to load document');
+    }
+}
+
+async function deleteDocument(artifactId) {
+    if (!confirm('Are you sure you want to delete this document?')) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/artifacts/${artifactId}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Failed to delete');
+
+        // Refresh the list
+        openSavedDocuments();
+        updateStatus('Document deleted');
+
+        // If currently viewing this document, clear the preview
+        if (currentArtifactId === artifactId) {
+            slidesContainer.innerHTML = `
+                <div class="empty-state">
+                    <p>Enter your prompt and click "Generate Presentation" to start.</p>
+                </div>
+            `;
+            previewActions.style.display = 'none';
+            currentArtifactId = null;
+        }
+
+    } catch (error) {
+        console.error('Error deleting document:', error);
+        alert('Failed to delete document');
+    }
+}
+
 // Make functions globally available
 window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
@@ -1266,3 +1545,7 @@ window.regenerateSlide = regenerateSlide;
 window.toggleSlideList = toggleSlideList;
 window.scrollToSlide = scrollToSlide;
 window.initializeChartsInElement = initializeChartsInElement;
+window.openSavedDocuments = openSavedDocuments;
+window.closeSavedDocuments = closeSavedDocuments;
+window.loadDocument = loadDocument;
+window.deleteDocument = deleteDocument;

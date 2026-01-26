@@ -45,12 +45,13 @@ class HTMLCaptureService:
         await loop.run_in_executor(self._executor, self.close_sync)
 
     def _get_full_html(self, slide_html: str) -> str:
-        """Wrap slide HTML with full document including Tailwind CSS."""
+        """Wrap slide HTML with full document including Tailwind CSS and Chart.js."""
         return f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         tailwind.config = {{
             theme: {{
@@ -92,6 +93,113 @@ class HTMLCaptureService:
 </head>
 <body>
 {slide_html}
+<script>
+// Chart.js initialization
+function initializeCharts() {{
+    const colors = [
+        {{ bg: 'rgba(59, 130, 246, 0.7)', border: 'rgb(59, 130, 246)' }},
+        {{ bg: 'rgba(139, 92, 246, 0.7)', border: 'rgb(139, 92, 246)' }},
+        {{ bg: 'rgba(16, 185, 129, 0.7)', border: 'rgb(16, 185, 129)' }},
+        {{ bg: 'rgba(249, 115, 22, 0.7)', border: 'rgb(249, 115, 22)' }},
+        {{ bg: 'rgba(236, 72, 153, 0.7)', border: 'rgb(236, 72, 153)' }},
+        {{ bg: 'rgba(99, 102, 241, 0.7)', border: 'rgb(99, 102, 241)' }},
+    ];
+
+    document.querySelectorAll('.chart-container[data-chart]').forEach(function(container) {{
+        if (container.dataset.initialized === 'true') return;
+
+        const canvas = container.querySelector('canvas');
+        if (!canvas) return;
+
+        try {{
+            const chartData = JSON.parse(container.dataset.chart);
+            const chartType = chartData.chart_type;
+            const series = chartData.series || [];
+            const title = chartData.title || '';
+
+            let labels = [];
+            let datasets = [];
+
+            if (chartType === 'pie') {{
+                if (series.length > 0) {{
+                    labels = series[0].data.map(d => String(d.x));
+                    datasets = [{{
+                        data: series[0].data.map(d => d.y),
+                        backgroundColor: series[0].data.map((_, i) => colors[i % colors.length].bg),
+                        borderColor: series[0].data.map((_, i) => colors[i % colors.length].border),
+                        borderWidth: 2,
+                    }}];
+                }}
+            }} else {{
+                if (series.length > 0) {{
+                    labels = series[0].data.map(d => String(d.x));
+                }}
+                datasets = series.map((s, idx) => ({{
+                    label: s.name,
+                    data: s.data.map(d => d.y),
+                    backgroundColor: colors[idx % colors.length].bg,
+                    borderColor: colors[idx % colors.length].border,
+                    borderWidth: 2,
+                    fill: chartType === 'area',
+                    tension: chartType === 'line' || chartType === 'area' ? 0.3 : 0,
+                }}));
+            }}
+
+            let type = chartType;
+            if (type === 'area') type = 'line';
+            if (type === 'stacked_bar') type = 'bar';
+
+            const config = {{
+                type: type,
+                data: {{ labels: labels, datasets: datasets }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {{
+                        legend: {{
+                            display: series.length > 1 || chartType === 'pie',
+                            position: chartType === 'pie' ? 'right' : 'top',
+                        }},
+                        title: {{
+                            display: !!title,
+                            text: title,
+                            font: {{ size: 14, weight: 'bold' }},
+                        }},
+                    }},
+                    scales: chartType === 'pie' ? {{}} : {{
+                        x: {{
+                            title: {{ display: !!chartData.x_label, text: chartData.x_label || '' }},
+                            grid: {{ display: false }},
+                            stacked: chartType === 'stacked_bar',
+                        }},
+                        y: {{
+                            title: {{ display: !!chartData.y_label, text: chartData.y_label || '' }},
+                            beginAtZero: true,
+                            stacked: chartType === 'stacked_bar',
+                        }},
+                    }},
+                }},
+            }};
+
+            new Chart(canvas, config);
+            container.dataset.initialized = 'true';
+        }} catch (e) {{
+            console.error('Failed to initialize chart:', e);
+        }}
+    }});
+
+    // Signal that charts are ready
+    window.chartsInitialized = true;
+}}
+
+// Initialize charts when DOM is ready
+if (document.readyState === 'loading') {{
+    document.addEventListener('DOMContentLoaded', initializeCharts);
+}} else {{
+    initializeCharts();
+}}
+</script>
 </body>
 </html>"""
 
@@ -107,6 +215,21 @@ class HTMLCaptureService:
 
             # Wait for Tailwind to process
             page.wait_for_timeout(500)
+
+            # Wait for Chart.js to initialize (if charts exist)
+            has_charts = page.query_selector('.chart-container[data-chart]') is not None
+            if has_charts:
+                # Wait for charts to be initialized (max 3 seconds)
+                try:
+                    page.wait_for_function(
+                        'window.chartsInitialized === true',
+                        timeout=3000
+                    )
+                    # Additional wait for Chart.js animation to complete
+                    page.wait_for_timeout(500)
+                except Exception:
+                    # If wait times out, continue anyway
+                    page.wait_for_timeout(1000)
 
             # Find the slide element and screenshot it
             slide = page.query_selector('.slide')

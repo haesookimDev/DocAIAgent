@@ -1,10 +1,15 @@
 """Artifacts API - Endpoints for downloading generated documents."""
 
-from typing import Literal
+import asyncio
+import base64
+import json
+import logging
+from typing import Literal, AsyncGenerator
 from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
+from sse_starlette.sse import EventSourceResponse
 
 from app.schemas.slidespec import SlideSpec, Slide
 from app.services.export_service import ExportService
@@ -12,6 +17,7 @@ from app.services.storage_service import get_storage_service
 from app.renderers.html_slide_renderer import HTMLSlideRenderer
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _get_storage():
@@ -402,3 +408,116 @@ async def regenerate_slide(artifact_id: str, slide_index: int, prompt: str = Non
         "slide_data": new_slide_dict,
         "message": "Slide regenerated successfully",
     }
+
+
+@router.get("/artifacts/{artifact_id}/export-stream")
+async def export_with_progress(
+    artifact_id: str,
+    format: Literal["pptx"] = Query(default="pptx"),
+):
+    """Export artifact with SSE progress updates.
+
+    Streams progress events during export:
+    - progress: {current, total, status}
+    - complete: {download_url} (base64 encoded data)
+    - error: {message}
+    """
+    storage = _get_storage()
+    slidespec_dict = storage.get_slidespec(artifact_id)
+
+    if not slidespec_dict:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    slidespec = SlideSpec.model_validate(slidespec_dict)
+    total_slides = len(slidespec.slides)
+
+    async def generate_events() -> AsyncGenerator[dict, None]:
+        try:
+            # Initial status
+            yield {
+                "event": "progress",
+                "data": json.dumps({
+                    "current": 0,
+                    "total": total_slides,
+                    "status": "Initializing export...",
+                    "phase": "init"
+                })
+            }
+
+            from app.services.html_capture_service import get_html_capture_service
+            from app.services.export_service import ExportService
+
+            capture_service = get_html_capture_service()
+            export_service = ExportService()
+            renderer = HTMLSlideRenderer()
+
+            images = []
+
+            # Capture each slide with progress updates
+            for idx, slide in enumerate(slidespec.slides):
+                yield {
+                    "event": "progress",
+                    "data": json.dumps({
+                        "current": idx,
+                        "total": total_slides,
+                        "status": f"Rendering slide {idx + 1} of {total_slides}...",
+                        "phase": "rendering"
+                    })
+                }
+
+                # Render slide to HTML and capture as image
+                html = renderer.render_slide(slide, idx)
+                image_bytes = await capture_service.capture_slide_html(html)
+                images.append(image_bytes)
+
+                # Small delay to allow SSE to be sent
+                await asyncio.sleep(0.05)
+
+            # Creating PPTX
+            yield {
+                "event": "progress",
+                "data": json.dumps({
+                    "current": total_slides,
+                    "total": total_slides,
+                    "status": "Creating PPTX file...",
+                    "phase": "creating"
+                })
+            }
+
+            # Collect speaker notes
+            speaker_notes = [slide.speaker_notes for slide in slidespec.slides]
+
+            # Create PPTX from images
+            pptx_bytes = export_service.image_pptx_exporter.export_from_images(
+                images, speaker_notes
+            )
+
+            # Encode as base64 for transfer
+            pptx_base64 = base64.b64encode(pptx_bytes).decode('utf-8')
+
+            # Generate filename
+            title = slidespec.deck.title or "presentation"
+            filename = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).strip()
+            filename = (filename[:50] or "presentation") + ".pptx"
+
+            yield {
+                "event": "complete",
+                "data": json.dumps({
+                    "status": "Export complete!",
+                    "filename": filename,
+                    "data": pptx_base64,
+                    "size": len(pptx_bytes)
+                })
+            }
+
+        except Exception as e:
+            logger.exception("Export stream error")
+            yield {
+                "event": "error",
+                "data": json.dumps({
+                    "status": "Export failed",
+                    "message": str(e)
+                })
+            }
+
+    return EventSourceResponse(generate_events())

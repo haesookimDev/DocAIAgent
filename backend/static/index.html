@@ -100,8 +100,17 @@
     <div class="app">
         <!-- Header -->
         <header class="header">
-            <h1>DocAIAgent</h1>
-            <p>AI-powered Document & Presentation Generator</p>
+            <div class="header-content">
+                <div class="header-title">
+                    <h1>DocAIAgent</h1>
+                    <p>AI-powered Document & Presentation Generator</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="openSavedDocuments()">
+                        📁 Saved Documents
+                    </button>
+                </div>
+            </div>
         </header>
 
         <!-- Main Content -->
@@ -280,7 +289,99 @@
         </div>
     </div>
 
+    <!-- Saved Documents Modal -->
+    <div id="savedDocsModal" class="modal" style="display: none;">
+        <div class="modal-backdrop" onclick="closeSavedDocuments()"></div>
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3>📁 Saved Documents</h3>
+                <button class="modal-close" onclick="closeSavedDocuments()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="savedDocsList" class="saved-docs-list">
+                    <p style="text-align: center; color: #6b7280;">Loading...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSavedDocuments()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <style>
+        /* Header styles */
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .header-title h1 {
+            margin: 0;
+        }
+        .header-title p {
+            margin: 0;
+        }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Saved Documents List */
+        .saved-docs-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .saved-doc-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .saved-doc-item:hover {
+            border-color: #3b82f6;
+            background: #f8fafc;
+        }
+        .saved-doc-info {
+            flex: 1;
+        }
+        .saved-doc-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        .saved-doc-meta {
+            font-size: 12px;
+            color: #6b7280;
+            display: flex;
+            gap: 12px;
+        }
+        .saved-doc-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .saved-doc-actions button {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        .saved-docs-empty {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        .saved-docs-empty svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 12px;
+            color: #d1d5db;
+        }
+
         /* Modal styles */
         .modal {
             position: fixed;
