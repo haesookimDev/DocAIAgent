@@ -7,8 +7,8 @@ from typing import Any
 from bs4 import BeautifulSoup
 from pptx import Presentation
 from pptx.util import Inches, Pt
-from pptx.dml.color import RgbColor
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.dml.color import RGBColor
+from pptx.enum.text import PP_ALIGN
 
 from docx import Document
 from docx.shared import Inches as DocxInches, Pt as DocxPt
@@ -31,10 +31,10 @@ class PPTXExporter:
     MARGIN_BOTTOM = Inches(0.5)
 
     # Colors
-    PRIMARY_COLOR = RgbColor(0x1a, 0x1a, 0x2e)
-    ACCENT_COLOR = RgbColor(0x4a, 0x90, 0xd9)
-    TEXT_COLOR = RgbColor(0x33, 0x33, 0x33)
-    LIGHT_TEXT = RgbColor(0x66, 0x66, 0x66)
+    PRIMARY_COLOR = RGBColor(0x1a, 0x1a, 0x2e)
+    ACCENT_COLOR = RGBColor(0x4a, 0x90, 0xd9)
+    TEXT_COLOR = RGBColor(0x33, 0x33, 0x33)
+    LIGHT_TEXT = RGBColor(0x66, 0x66, 0x66)
 
     def __init__(self, template_path: Path | str | None = None):
         """Initialize with optional template."""
@@ -339,7 +339,7 @@ class PPTXExporter:
             cell.fill.solid()
             cell.fill.fore_color.rgb = self.PRIMARY_COLOR
             p = cell.text_frame.paragraphs[0]
-            p.font.color.rgb = RgbColor(255, 255, 255)
+            p.font.color.rgb = RGBColor(255, 255, 255)
             p.font.size = Pt(12)
             p.font.bold = True
 

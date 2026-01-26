@@ -93,7 +93,11 @@ async def stream_run(run_id: str):
             ):
                 # Update run data based on event
                 if event.event == SSEEventType.RUN_PROGRESS:
-                    run_data["status"] = RunStatus(event.data.get("status", RunStatus.GENERATING))
+                    status_value = event.data.get("status", "generating")
+                    try:
+                        run_data["status"] = RunStatus(status_value) if isinstance(status_value, str) else status_value
+                    except ValueError:
+                        run_data["status"] = RunStatus.GENERATING
                     run_data["progress"] = event.data.get("progress", 0)
                     run_data["current_slide"] = event.data.get("current_slide")
                     run_data["total_slides"] = event.data.get("total_slides")

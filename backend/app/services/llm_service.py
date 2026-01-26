@@ -92,7 +92,7 @@ class OpenAIProvider(BaseLLMProvider):
         response = await self.client.chat.completions.create(
             model=self.model,
             messages=messages,
-            max_tokens=8192,
+            max_completion_tokens=8192,
         )
 
         return response.choices[0].message.content or ""
@@ -109,7 +109,7 @@ class OpenAIProvider(BaseLLMProvider):
         stream = await self.client.chat.completions.create(
             model=self.model,
             messages=messages,
-            max_tokens=8192,
+            max_completion_tokens=8192,
             stream=True,
         )
 

@@ -195,9 +195,11 @@ Generate the complete SlideSpec JSON."""
                 await on_event(progress_event)
             yield progress_event
 
+            print(f"[LLM] Generating outline...")
             outline = await self.generate_outline(
                 prompt, language, audience, tone, slide_count
             )
+            print(f"[LLM] Outline generated: {outline.get('title', 'Untitled')}")
 
             # Generate SlideSpec
             progress_event = SSEEvent(
@@ -213,9 +215,11 @@ Generate the complete SlideSpec JSON."""
                 await on_event(progress_event)
             yield progress_event
 
+            print(f"[LLM] Generating SlideSpec...")
             slidespec = await self.generate_slidespec(
                 prompt, outline, language, audience, tone, slide_count
             )
+            print(f"[LLM] SlideSpec generated: {len(slidespec.slides)} slides")
 
             total_slides = len(slidespec.slides)
 
@@ -235,6 +239,8 @@ Generate the complete SlideSpec JSON."""
             yield progress_event
 
             for idx, slide in enumerate(slidespec.slides):
+                print(f"[Rendering] Slide {idx + 1}/{total_slides}: {slide.slide_id}")
+
                 # Slide start
                 slide_start_event = SSEEvent(
                     event=SSEEventType.SLIDE_START,
@@ -251,6 +257,7 @@ Generate the complete SlideSpec JSON."""
 
                 # Render slide HTML
                 html = self.renderer.render_slide(slide, idx)
+                print(f"[HTML Generated] Slide {idx + 1}: {len(html)} bytes")
 
                 # Slide chunk (complete HTML for this slide)
                 slide_chunk_event = SSEEvent(

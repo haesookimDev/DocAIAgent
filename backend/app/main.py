@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, RedirectResponse
 
 from app.config import get_settings
 from app.api import runs, artifacts
@@ -58,18 +59,34 @@ def create_app() -> FastAPI:
 
     # Static files for test UI
     static_path = Path(__file__).parent.parent / "static"
+    print(f"Static path: {static_path.absolute()}")
+    print(f"Static path exists: {static_path.exists()}")
+
     if static_path.exists():
         app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
-    @app.get("/")
-    async def root():
-        """Root endpoint - redirect to docs or serve UI."""
-        return {
-            "name": "DocAIAgent API",
-            "version": "0.1.0",
-            "docs": "/docs",
-            "ui": "/static/index.html",
-        }
+        @app.get("/")
+        async def root():
+            """Redirect to UI."""
+            return RedirectResponse(url="/static/index.html")
+
+        @app.get("/ui")
+        async def ui():
+            """Serve the UI directly."""
+            index_path = static_path / "index.html"
+            if index_path.exists():
+                return FileResponse(index_path)
+            return {"error": "UI not found"}
+    else:
+        @app.get("/")
+        async def root():
+            """Root endpoint - API info."""
+            return {
+                "name": "DocAIAgent API",
+                "version": "0.1.0",
+                "docs": "/docs",
+                "note": "Static UI not found. Run from backend directory.",
+            }
 
     @app.get("/health")
     async def health():

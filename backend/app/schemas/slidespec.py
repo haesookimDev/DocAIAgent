@@ -17,7 +17,7 @@ class Citation(BaseModel):
 
     id: str = Field(..., min_length=1, max_length=80)
     kind: Literal["evidence", "url", "note"] = "evidence"
-    evidence_id: str = Field(..., min_length=1, max_length=80)
+    evidence_id: str | None = Field(None, max_length=80)  # Made optional
     title: str | None = Field(None, max_length=300)
     source: str | None = Field(None, max_length=300)
     locator: dict[str, Any] | None = None
@@ -116,10 +116,10 @@ class Slide(BaseModel):
     """Single slide in a deck."""
 
     slide_id: str = Field(..., min_length=1, max_length=120)
-    type: Literal["title", "section", "content", "closing", "appendix"]
-    layout: LayoutRef
+    type: Literal["title", "section", "content", "closing", "appendix"] = "content"
+    layout: LayoutRef | None = None  # Made optional - LLM may not always provide
     title: str | None = Field(None, max_length=500)
-    elements: list[Element] = Field(..., min_length=1, max_length=200)
+    elements: list[Element] = Field(default_factory=list, max_length=200)
     citations: list[Citation] | None = None
     speaker_notes: str | None = Field(None, max_length=10000)
     extensions: dict[str, Any] | None = None
