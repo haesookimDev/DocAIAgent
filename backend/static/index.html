@@ -179,6 +179,9 @@
                 <div class="preview-header">
                     <h2>Preview</h2>
                     <div class="preview-actions" id="previewActions" style="display: none;">
+                        <button class="btn btn-secondary" id="toggleSlideList" onclick="toggleSlideList()">
+                            📋 Slide List
+                        </button>
                         <button class="btn btn-secondary" id="downloadPptx">
                             Download PPTX
                         </button>
@@ -199,10 +202,24 @@
                     <p class="progress-text" id="progressText">Preparing...</p>
                 </div>
 
-                <!-- Slides Container -->
-                <div class="slides-container" id="slidesContainer">
-                    <div class="empty-state">
-                        <p>Enter your prompt and click "Generate Presentation" to start.</p>
+                <!-- Preview Content Area -->
+                <div class="preview-content-wrapper">
+                    <!-- Slide List Sidebar -->
+                    <div class="slide-list-panel" id="slideListPanel" style="display: none;">
+                        <div class="slide-list-header">
+                            <h3>Slides</h3>
+                            <button class="slide-list-close" onclick="toggleSlideList()">&times;</button>
+                        </div>
+                        <div class="slide-list" id="slideList">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Slides Container -->
+                    <div class="slides-container" id="slidesContainer">
+                        <div class="empty-state">
+                            <p>Enter your prompt and click "Generate Presentation" to start.</p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -350,13 +367,17 @@
             background: #f9fafb;
             border-radius: 8px;
             padding: 16px;
-            overflow: auto;
-            max-height: 500px;
+            overflow: hidden;
+            height: fit-content;
+        }
+        .edit-preview-container {
+            width: 480px; /* 960 * 0.5 */
+            height: 270px; /* 540 * 0.5 */
+            overflow: hidden;
         }
         .edit-preview .slide {
             transform: scale(0.5);
             transform-origin: top left;
-            margin-bottom: -270px;
         }
         .edit-form {
             display: flex;
@@ -432,6 +453,340 @@
 
         .btn-icon {
             margin-right: 4px;
+        }
+
+        /* UI-based Style Editor */
+        .style-section {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .style-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .style-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        .style-row:last-child {
+            margin-bottom: 0;
+        }
+        .style-label {
+            font-size: 12px;
+            color: #6b7280;
+            width: 80px;
+            flex-shrink: 0;
+        }
+        .style-control {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Color picker */
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .color-picker {
+            width: 36px;
+            height: 36px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 0;
+        }
+        .color-picker::-webkit-color-swatch-wrapper {
+            padding: 2px;
+        }
+        .color-picker::-webkit-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+        .color-presets {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .color-preset {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .color-preset:hover {
+            border-color: #3b82f6;
+        }
+        .color-preset.selected {
+            border-color: #1e40af;
+        }
+
+        /* Font size select */
+        .font-size-select {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+            min-width: 100px;
+        }
+
+        /* Font weight buttons */
+        .font-weight-btns {
+            display: flex;
+            gap: 4px;
+        }
+        .font-weight-btn {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .font-weight-btn:hover {
+            background: #f3f4f6;
+        }
+        .font-weight-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Preset themes */
+        .theme-presets {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .theme-preset {
+            height: 60px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .theme-preset:hover {
+            border-color: #3b82f6;
+            transform: scale(1.02);
+        }
+        .theme-preset.selected {
+            border-color: #1e40af;
+        }
+        .theme-preset-label {
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* Gradient theme backgrounds */
+        .theme-dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+        }
+        .theme-primary {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+        }
+        .theme-accent {
+            background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+            color: white;
+        }
+        .theme-light {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1f2937;
+        }
+        .theme-white {
+            background: white;
+            color: #1f2937;
+            border-color: #e5e7eb !important;
+        }
+        .theme-emerald {
+            background: linear-gradient(135deg, #065f46 0%, #10b981 100%);
+            color: white;
+        }
+        .theme-orange {
+            background: linear-gradient(135deg, #9a3412 0%, #f97316 100%);
+            color: white;
+        }
+        .theme-rose {
+            background: linear-gradient(135deg, #9f1239 0%, #f43f5e 100%);
+            color: white;
+        }
+
+        /* Edit form scrollable */
+        .edit-form {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        /* Element card */
+        .element-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .element-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .element-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+        }
+        .element-card-type {
+            font-size: 11px;
+            color: #6b7280;
+            background: #f3f4f6;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* Slide List Panel */
+        .preview-content-wrapper {
+            display: flex;
+            gap: 16px;
+        }
+        .slide-list-panel {
+            width: 280px;
+            flex-shrink: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-height: calc(100vh - 200px);
+            display: flex;
+            flex-direction: column;
+        }
+        .slide-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+        .slide-list-header h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .slide-list-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .slide-list-close:hover {
+            color: #1f2937;
+        }
+        .slide-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .slide-list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 4px;
+        }
+        .slide-list-item:hover {
+            background: #f3f4f6;
+        }
+        .slide-list-item.active {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+        }
+        .slide-list-item-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .slide-list-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .slide-list-item-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1f2937;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .slide-list-item-type {
+            font-size: 11px;
+            color: #6b7280;
+        }
+        .slide-list-item-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .slide-list-item:hover .slide-list-item-actions {
+            opacity: 1;
+        }
+        .slide-list-action-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: #e5e7eb;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .slide-list-action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Adjust slides container when list is visible */
+        .slides-container {
+            flex: 1;
         }
     </style>
 

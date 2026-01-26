@@ -506,12 +506,15 @@ class ExportService:
 
         This captures each slide as an image and embeds them into PPTX,
         ensuring the output looks exactly like the HTML preview.
+        Falls back to legacy export if Playwright fails.
         """
-        from app.services.html_capture_service import get_html_capture_service
-
-        capture_service = get_html_capture_service()
+        import logging
+        logger = logging.getLogger(__name__)
 
         try:
+            from app.services.html_capture_service import get_html_capture_service
+            capture_service = get_html_capture_service()
+
             # Capture all slides as images
             images = await capture_service.capture_slidespec(slidespec)
 
@@ -522,9 +525,11 @@ class ExportService:
 
             # Create PPTX from images
             return self.image_pptx_exporter.export_from_images(images, speaker_notes)
-        finally:
-            # Don't close the service here - it's a singleton
-            pass
+
+        except Exception as e:
+            logger.warning(f"Image-based PPTX export failed: {e}. Falling back to legacy export.")
+            # Fallback to legacy element-based export
+            return self.export_to_pptx(slidespec)
 
     async def export_html_slides_to_pptx(self, html_slides: list[str], speaker_notes: list[str] | None = None) -> bytes:
         """Export HTML slides to PPTX as images.

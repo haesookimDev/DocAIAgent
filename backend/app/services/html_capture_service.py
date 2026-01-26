@@ -1,9 +1,8 @@
 """HTML Capture Service - Renders HTML slides to images using Playwright."""
 
 import asyncio
-import io
-import base64
-from pathlib import Path
+import sys
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from app.renderers.html_slide_renderer import HTMLSlideRenderer
@@ -11,7 +10,7 @@ from app.schemas.slidespec import SlideSpec
 
 
 class HTMLCaptureService:
-    """Captures HTML slides as images using Playwright."""
+    """Captures HTML slides as images using Playwright (sync API for Windows compatibility)."""
 
     # Slide dimensions (16:9 at 2x for quality)
     SLIDE_WIDTH = 1920
@@ -20,24 +19,30 @@ class HTMLCaptureService:
     def __init__(self):
         self._browser = None
         self._playwright = None
+        self._executor = ThreadPoolExecutor(max_workers=1)
         self.renderer = HTMLSlideRenderer()
 
-    async def _ensure_browser(self):
-        """Ensure browser is initialized."""
+    def _ensure_browser_sync(self):
+        """Ensure browser is initialized (sync version)."""
         if self._browser is None:
-            from playwright.async_api import async_playwright
-            self._playwright = await async_playwright().start()
-            self._browser = await self._playwright.chromium.launch(headless=True)
+            from playwright.sync_api import sync_playwright
+            self._playwright = sync_playwright().start()
+            self._browser = self._playwright.chromium.launch(headless=True)
         return self._browser
+
+    def close_sync(self):
+        """Close browser resources (sync version)."""
+        if self._browser:
+            self._browser.close()
+            self._browser = None
+        if self._playwright:
+            self._playwright.stop()
+            self._playwright = None
 
     async def close(self):
         """Close browser resources."""
-        if self._browser:
-            await self._browser.close()
-            self._browser = None
-        if self._playwright:
-            await self._playwright.stop()
-            self._playwright = None
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(self._executor, self.close_sync)
 
     def _get_full_html(self, slide_html: str) -> str:
         """Wrap slide HTML with full document including Tailwind CSS."""
@@ -90,52 +95,79 @@ class HTMLCaptureService:
 </body>
 </html>"""
 
-    async def capture_slide_html(self, slide_html: str) -> bytes:
-        """Capture a slide HTML as PNG image bytes."""
-        browser = await self._ensure_browser()
-        page = await browser.new_page(viewport={'width': self.SLIDE_WIDTH, 'height': self.SLIDE_HEIGHT})
+    def _capture_slide_html_sync(self, slide_html: str) -> bytes:
+        """Capture a slide HTML as PNG image bytes (sync version)."""
+        browser = self._ensure_browser_sync()
+        page = browser.new_page(viewport={'width': self.SLIDE_WIDTH, 'height': self.SLIDE_HEIGHT})
 
         try:
             # Set content with full HTML
             full_html = self._get_full_html(slide_html)
-            await page.set_content(full_html, wait_until='networkidle')
+            page.set_content(full_html, wait_until='networkidle')
 
             # Wait for Tailwind to process
-            await page.wait_for_timeout(500)
+            page.wait_for_timeout(500)
 
             # Find the slide element and screenshot it
-            slide = await page.query_selector('.slide')
+            slide = page.query_selector('.slide')
             if slide:
-                screenshot = await slide.screenshot(type='png')
+                screenshot = slide.screenshot(type='png')
             else:
                 # Fallback to full page
-                screenshot = await page.screenshot(type='png')
+                screenshot = page.screenshot(type='png')
 
             return screenshot
 
         finally:
-            await page.close()
+            page.close()
 
-    async def capture_slidespec(self, slidespec: SlideSpec) -> list[bytes]:
-        """Capture all slides from a SlideSpec as PNG images."""
+    async def capture_slide_html(self, slide_html: str) -> bytes:
+        """Capture a slide HTML as PNG image bytes."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            self._executor,
+            self._capture_slide_html_sync,
+            slide_html
+        )
+
+    def _capture_slidespec_sync(self, slidespec: SlideSpec) -> list[bytes]:
+        """Capture all slides from a SlideSpec as PNG images (sync version)."""
         images = []
 
         for idx, slide in enumerate(slidespec.slides):
             # Render slide to HTML
             html = self.renderer.render_slide(slide, idx)
             # Capture as image
-            image_bytes = await self.capture_slide_html(html)
+            image_bytes = self._capture_slide_html_sync(html)
             images.append(image_bytes)
 
+        return images
+
+    async def capture_slidespec(self, slidespec: SlideSpec) -> list[bytes]:
+        """Capture all slides from a SlideSpec as PNG images."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            self._executor,
+            self._capture_slidespec_sync,
+            slidespec
+        )
+
+    def _capture_html_slides_sync(self, html_slides: list[str]) -> list[bytes]:
+        """Capture multiple HTML slides as PNG images (sync version)."""
+        images = []
+        for html in html_slides:
+            image_bytes = self._capture_slide_html_sync(html)
+            images.append(image_bytes)
         return images
 
     async def capture_html_slides(self, html_slides: list[str]) -> list[bytes]:
         """Capture multiple HTML slides as PNG images."""
-        images = []
-        for html in html_slides:
-            image_bytes = await self.capture_slide_html(html)
-            images.append(image_bytes)
-        return images
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            self._executor,
+            self._capture_html_slides_sync,
+            html_slides
+        )
 
 
 # Singleton instance

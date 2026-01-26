@@ -6,14 +6,17 @@ from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 
-from app.schemas.slidespec import SlideSpec
+from app.schemas.slidespec import SlideSpec, Slide
 from app.services.export_service import ExportService
+from app.services.storage_service import get_storage_service
 from app.renderers.html_slide_renderer import HTMLSlideRenderer
 
 router = APIRouter()
 
-# Import shared storage from runs module
-from app.api.runs import _runs, _slidespecs
+
+def _get_storage():
+    """Get storage service instance."""
+    return get_storage_service()
 
 
 def make_content_disposition(filename: str, extension: str) -> str:
@@ -28,20 +31,53 @@ def make_content_disposition(filename: str, extension: str) -> str:
     return f"attachment; filename=\"{ascii_filename}.{extension}\"; filename*=UTF-8''{utf8_filename}.{extension}"
 
 
+@router.get("/artifacts")
+async def list_artifacts(
+    limit: int = Query(default=20, le=100),
+    offset: int = Query(default=0, ge=0),
+):
+    """List all artifacts."""
+    storage = _get_storage()
+    items, total = storage.list_slidespecs(limit=limit, offset=offset)
+
+    return {
+        "items": items,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
 @router.get("/artifacts/{artifact_id}")
 async def get_artifact(artifact_id: str):
     """Get artifact metadata."""
-    if artifact_id not in _slidespecs:
-        raise HTTPException(status_code=404, detail="Artifact not found")
+    storage = _get_storage()
+    slidespec = storage.get_slidespec(artifact_id)
 
-    slidespec = _slidespecs[artifact_id]
+    if not slidespec:
+        raise HTTPException(status_code=404, detail="Artifact not found")
 
     return {
         "artifact_id": artifact_id,
         "title": slidespec.get("deck", {}).get("title", "Untitled"),
         "slide_count": len(slidespec.get("slides", [])),
         "formats": ["pptx", "docx", "html"],
+        "created_at": slidespec.get("created_at"),
     }
+
+
+@router.delete("/artifacts/{artifact_id}")
+async def delete_artifact(artifact_id: str):
+    """Delete an artifact."""
+    storage = _get_storage()
+    slidespec = storage.get_slidespec(artifact_id)
+
+    if not slidespec:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    storage.delete_slidespec(artifact_id)
+
+    return {"message": "Artifact deleted", "artifact_id": artifact_id}
 
 
 @router.get("/artifacts/{artifact_id}/download")
@@ -50,10 +86,12 @@ async def download_artifact(
     format: Literal["pptx", "docx", "html"] = Query(default="pptx"),
 ):
     """Download the generated artifact in specified format."""
-    if artifact_id not in _slidespecs:
+    storage = _get_storage()
+    slidespec_dict = storage.get_slidespec(artifact_id)
+
+    if not slidespec_dict:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
-    slidespec_dict = _slidespecs[artifact_id]
     slidespec = SlideSpec.model_validate(slidespec_dict)
 
     export_service = ExportService()
@@ -102,10 +140,12 @@ async def download_artifact(
 @router.get("/artifacts/{artifact_id}/preview")
 async def preview_artifact(artifact_id: str):
     """Get HTML preview of the artifact."""
-    if artifact_id not in _slidespecs:
+    storage = _get_storage()
+    slidespec_dict = storage.get_slidespec(artifact_id)
+
+    if not slidespec_dict:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
-    slidespec_dict = _slidespecs[artifact_id]
     slidespec = SlideSpec.model_validate(slidespec_dict)
 
     renderer = HTMLSlideRenderer()
@@ -117,19 +157,55 @@ async def preview_artifact(artifact_id: str):
     )
 
 
+@router.get("/artifacts/{artifact_id}/slides")
+async def list_slides(artifact_id: str):
+    """Get list of all slides in an artifact with summary info."""
+    storage = _get_storage()
+    slidespec_dict = storage.get_slidespec(artifact_id)
+
+    if not slidespec_dict:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    slides = slidespec_dict.get("slides", [])
+    slide_list = []
+
+    for idx, slide in enumerate(slides):
+        # Extract title from elements
+        title = ""
+        for elem in slide.get("elements", []):
+            if elem.get("role") == "title" and elem.get("kind") == "text":
+                title = elem.get("content", {}).get("text", "")
+                break
+
+        slide_list.append({
+            "index": idx,
+            "slide_id": slide.get("slide_id", f"slide-{idx}"),
+            "type": slide.get("type", "content"),
+            "layout": slide.get("layout", {}).get("layout_id", "one_column"),
+            "title": title,
+        })
+
+    return {
+        "artifact_id": artifact_id,
+        "total_slides": len(slides),
+        "slides": slide_list,
+    }
+
+
 @router.get("/artifacts/{artifact_id}/slides/{slide_index}")
 async def get_slide_html(artifact_id: str, slide_index: int):
     """Get HTML for a specific slide."""
-    if artifact_id not in _slidespecs:
+    storage = _get_storage()
+    slidespec_dict = storage.get_slidespec(artifact_id)
+
+    if not slidespec_dict:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
-    slidespec_dict = _slidespecs[artifact_id]
     slides = slidespec_dict.get("slides", [])
 
     if slide_index < 0 or slide_index >= len(slides):
         raise HTTPException(status_code=404, detail="Slide not found")
 
-    from app.schemas.slidespec import Slide
     slide = Slide.model_validate(slides[slide_index])
 
     renderer = HTMLSlideRenderer()
@@ -139,36 +215,43 @@ async def get_slide_html(artifact_id: str, slide_index: int):
         "slide_index": slide_index,
         "slide_id": slide.slide_id,
         "html": html_content,
+        "slide_data": slides[slide_index],
     }
 
 
 @router.get("/artifacts/{artifact_id}/slidespec")
 async def get_slidespec(artifact_id: str):
     """Get the raw SlideSpec JSON."""
-    if artifact_id not in _slidespecs:
+    storage = _get_storage()
+    slidespec_dict = storage.get_slidespec(artifact_id)
+
+    if not slidespec_dict:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
-    return _slidespecs[artifact_id]
+    return slidespec_dict
 
 
 @router.put("/artifacts/{artifact_id}/slides/{slide_index}")
 async def update_slide(artifact_id: str, slide_index: int, slide_data: dict):
     """Update a specific slide's data."""
-    if artifact_id not in _slidespecs:
+    storage = _get_storage()
+    slidespec_dict = storage.get_slidespec(artifact_id)
+
+    if not slidespec_dict:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
-    slidespec_dict = _slidespecs[artifact_id]
     slides = slidespec_dict.get("slides", [])
 
     if slide_index < 0 or slide_index >= len(slides):
         raise HTTPException(status_code=404, detail="Slide not found")
 
     # Validate the new slide data
-    from app.schemas.slidespec import Slide
     try:
         validated_slide = Slide.model_validate(slide_data)
         # Update the slide in storage
         slides[slide_index] = validated_slide.model_dump()
+        # Save to persistent storage
+        storage.save_slidespec(artifact_id, slidespec_dict)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid slide data: {str(e)}")
 
@@ -187,10 +270,12 @@ async def update_slide(artifact_id: str, slide_index: int, slide_data: dict):
 @router.put("/artifacts/{artifact_id}/slides/{slide_index}/element/{element_id}")
 async def update_element(artifact_id: str, slide_index: int, element_id: str, element_data: dict):
     """Update a specific element within a slide."""
-    if artifact_id not in _slidespecs:
+    storage = _get_storage()
+    slidespec_dict = storage.get_slidespec(artifact_id)
+
+    if not slidespec_dict:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
-    slidespec_dict = _slidespecs[artifact_id]
     slides = slidespec_dict.get("slides", [])
 
     if slide_index < 0 or slide_index >= len(slides):
@@ -211,8 +296,10 @@ async def update_element(artifact_id: str, slide_index: int, element_id: str, el
     if not element_found:
         raise HTTPException(status_code=404, detail=f"Element {element_id} not found")
 
+    # Save to persistent storage
+    storage.save_slidespec(artifact_id, slidespec_dict)
+
     # Re-render the slide
-    from app.schemas.slidespec import Slide
     validated_slide = Slide.model_validate(slide)
     renderer = HTMLSlideRenderer()
     html_content = renderer.render_slide(validated_slide, slide_index)
@@ -228,10 +315,12 @@ async def update_element(artifact_id: str, slide_index: int, element_id: str, el
 @router.post("/artifacts/{artifact_id}/slides/{slide_index}/regenerate")
 async def regenerate_slide(artifact_id: str, slide_index: int, prompt: str = None):
     """Regenerate a specific slide with optional new prompt."""
-    if artifact_id not in _slidespecs:
+    storage = _get_storage()
+    slidespec_dict = storage.get_slidespec(artifact_id)
+
+    if not slidespec_dict:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
-    slidespec_dict = _slidespecs[artifact_id]
     slides = slidespec_dict.get("slides", [])
 
     if slide_index < 0 or slide_index >= len(slides):
@@ -269,9 +358,9 @@ async def regenerate_slide(artifact_id: str, slide_index: int, prompt: str = Non
 
     # Update storage
     slides[slide_index] = new_slide_dict
+    storage.save_slidespec(artifact_id, slidespec_dict)
 
     # Render HTML
-    from app.schemas.slidespec import Slide
     validated_slide = Slide.model_validate(new_slide_dict)
     renderer = HTMLSlideRenderer()
     html_content = renderer.render_slide(validated_slide, slide_index)

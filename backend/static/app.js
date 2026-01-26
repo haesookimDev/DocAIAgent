@@ -21,6 +21,8 @@ let currentArtifactId = null;
 let eventSource = null;
 let currentSlideData = {};  // Store slide data for editing
 let editingSlideIndex = null;
+let slideListVisible = false;
+let slideListData = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -198,7 +200,11 @@ function addSlide(slideId, slideIndex, html, slideData = null) {
     wrapper.dataset.index = slideIndex;
     wrapper.dataset.slideId = slideId;
 
-    wrapper.innerHTML = html;
+    // Wrap slide content in scale container for proper scaling
+    const scaleContainer = document.createElement('div');
+    scaleContainer.className = 'slide-scale-container';
+    scaleContainer.innerHTML = html;
+    wrapper.appendChild(scaleContainer);
 
     // Add edit button
     const editBtn = document.createElement('button');
@@ -230,6 +236,27 @@ function addSlide(slideId, slideIndex, html, slideData = null) {
 
     // Scroll to new slide
     wrapper.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+    // Update slide list if visible
+    if (slideListVisible && slideData) {
+        // Extract title from slide data
+        let title = '';
+        if (slideData.elements) {
+            const titleElem = slideData.elements.find(e => e.role === 'title');
+            if (titleElem && titleElem.content) {
+                title = titleElem.content.text || '';
+            }
+        }
+
+        slideListData[slideIndex] = {
+            index: slideIndex,
+            slide_id: slideId,
+            type: slideData.type || 'content',
+            layout: slideData.layout?.layout_id || 'one_column',
+            title: title,
+        };
+        renderSlideList();
+    }
 }
 
 function updateProgress(percent, message) {
@@ -257,6 +284,18 @@ function resetUI() {
     progressContainer.style.display = 'none';
     updateProgress(0, '');
     currentArtifactId = null;
+
+    // Reset slide list
+    slideListData = [];
+    slideListVisible = false;
+    const slideListPanel = document.getElementById('slideListPanel');
+    if (slideListPanel) {
+        slideListPanel.style.display = 'none';
+    }
+    const slideList = document.getElementById('slideList');
+    if (slideList) {
+        slideList.innerHTML = '';
+    }
 }
 
 async function downloadArtifact(format) {
@@ -325,8 +364,8 @@ async function openEditModal(slideIndex) {
         const data = await response.json();
         currentSlideData[slideIndex] = data;
 
-        // Update preview
-        document.getElementById('editPreview').innerHTML = data.html;
+        // Update preview with proper container
+        document.getElementById('editPreview').innerHTML = `<div class="edit-preview-container">${data.html}</div>`;
 
         // Fetch full slide spec for JSON editor
         const specResponse = await fetch(`${API_BASE}/artifacts/${currentArtifactId}/slidespec`);
@@ -361,16 +400,87 @@ function switchEditTab(tab) {
     document.getElementById('jsonEditor').style.display = tab === 'json' ? 'block' : 'none';
 }
 
+// Color presets for the editor
+const COLOR_PRESETS = {
+    backgrounds: [
+        { name: 'White', value: '#ffffff', class: 'bg-white' },
+        { name: 'Slate', value: '#0f172a', class: 'bg-slate-900' },
+        { name: 'Blue', value: '#1e3a8a', class: 'bg-blue-900' },
+        { name: 'Purple', value: '#7c3aed', class: 'bg-purple-600' },
+        { name: 'Green', value: '#065f46', class: 'bg-emerald-800' },
+        { name: 'Orange', value: '#9a3412', class: 'bg-orange-800' },
+        { name: 'Rose', value: '#9f1239', class: 'bg-rose-800' },
+        { name: 'Gray', value: '#f3f4f6', class: 'bg-gray-100' },
+    ],
+    text: [
+        { name: 'Black', value: '#000000', class: 'text-black' },
+        { name: 'White', value: '#ffffff', class: 'text-white' },
+        { name: 'Gray', value: '#4b5563', class: 'text-gray-600' },
+        { name: 'Blue', value: '#3b82f6', class: 'text-blue-500' },
+        { name: 'Purple', value: '#8b5cf6', class: 'text-purple-500' },
+    ]
+};
+
+// Theme presets
+const THEME_PRESETS = [
+    { id: 'white', name: 'Clean White', classes: 'bg-white' },
+    { id: 'light', name: 'Light Gray', classes: 'bg-gradient-to-br from-slate-50 to-slate-200' },
+    { id: 'dark', name: 'Dark', classes: 'bg-gradient-to-br from-slate-900 to-slate-800 text-white' },
+    { id: 'primary', name: 'Blue', classes: 'bg-gradient-to-br from-blue-900 to-blue-600 text-white' },
+    { id: 'accent', name: 'Purple', classes: 'bg-gradient-to-br from-purple-800 to-purple-500 text-white' },
+    { id: 'emerald', name: 'Emerald', classes: 'bg-gradient-to-br from-emerald-900 to-emerald-600 text-white' },
+    { id: 'orange', name: 'Orange', classes: 'bg-gradient-to-br from-orange-800 to-orange-500 text-white' },
+    { id: 'rose', name: 'Rose', classes: 'bg-gradient-to-br from-rose-900 to-rose-600 text-white' },
+];
+
+// Font size options
+const FONT_SIZES = [
+    { label: 'Small', value: 'text-sm' },
+    { label: 'Base', value: 'text-base' },
+    { label: 'Large', value: 'text-lg' },
+    { label: 'XL', value: 'text-xl' },
+    { label: '2XL', value: 'text-2xl' },
+    { label: '3XL', value: 'text-3xl' },
+    { label: '4XL', value: 'text-4xl' },
+    { label: '5XL', value: 'text-5xl' },
+];
+
 function buildVisualEditForm(slideSpec) {
     const form = document.getElementById('editForm');
     form.innerHTML = '';
 
-    // Layout selector
-    const layoutField = document.createElement('div');
-    layoutField.className = 'edit-field';
-    layoutField.innerHTML = `
-        <label>Layout</label>
-        <select id="editLayout">
+    // === Slide Theme Section ===
+    const themeSection = document.createElement('div');
+    themeSection.className = 'style-section';
+    themeSection.innerHTML = `
+        <div class="style-section-title">🎨 Slide Theme</div>
+        <div class="theme-presets" id="themePresets">
+            ${THEME_PRESETS.map(theme => `
+                <div class="theme-preset theme-${theme.id}" data-theme="${theme.id}" data-classes="${theme.classes}" onclick="selectTheme('${theme.id}')">
+                    <span class="theme-preset-label">${theme.name}</span>
+                </div>
+            `).join('')}
+        </div>
+        <input type="hidden" id="editSlideTailwind" value="${slideSpec.tailwind_classes || ''}">
+    `;
+    form.appendChild(themeSection);
+
+    // Highlight current theme if matches
+    setTimeout(() => {
+        const currentClasses = slideSpec.tailwind_classes || '';
+        THEME_PRESETS.forEach(theme => {
+            if (currentClasses.includes(theme.classes) || (theme.id === 'white' && !currentClasses)) {
+                document.querySelector(`[data-theme="${theme.id}"]`)?.classList.add('selected');
+            }
+        });
+    }, 0);
+
+    // === Layout Section ===
+    const layoutSection = document.createElement('div');
+    layoutSection.className = 'style-section';
+    layoutSection.innerHTML = `
+        <div class="style-section-title">📐 Layout</div>
+        <select id="editLayout" class="font-size-select" style="width: 100%;">
             <option value="title_center" ${slideSpec.layout?.layout_id === 'title_center' ? 'selected' : ''}>Title Center</option>
             <option value="section_header" ${slideSpec.layout?.layout_id === 'section_header' ? 'selected' : ''}>Section Header</option>
             <option value="one_column" ${slideSpec.layout?.layout_id === 'one_column' ? 'selected' : ''}>One Column</option>
@@ -379,50 +489,186 @@ function buildVisualEditForm(slideSpec) {
             <option value="closing" ${slideSpec.layout?.layout_id === 'closing' ? 'selected' : ''}>Closing</option>
         </select>
     `;
-    form.appendChild(layoutField);
+    form.appendChild(layoutSection);
 
-    // Tailwind classes for slide
-    const tailwindField = document.createElement('div');
-    tailwindField.className = 'edit-field';
-    tailwindField.innerHTML = `
-        <label>Slide Tailwind Classes</label>
-        <input type="text" id="editSlideTailwind" value="${slideSpec.tailwind_classes || ''}" placeholder="e.g., bg-gradient-to-br from-purple-900 to-indigo-900">
-    `;
-    form.appendChild(tailwindField);
+    // === Elements Section ===
+    const elementsSection = document.createElement('div');
+    elementsSection.className = 'style-section';
+    elementsSection.innerHTML = `<div class="style-section-title">✏️ Content Elements</div>`;
 
-    // Elements
     slideSpec.elements?.forEach((elem, idx) => {
-        const elemDiv = document.createElement('div');
-        elemDiv.className = 'edit-field';
-        elemDiv.style.borderTop = '1px solid #e5e7eb';
-        elemDiv.style.paddingTop = '16px';
+        const elemCard = document.createElement('div');
+        elemCard.className = 'element-card';
 
         const label = elem.role || elem.kind;
-        const content = elem.content?.text || elem.content?.items?.join('\n') || '';
+        const content = elem.content?.text || '';
 
         if (elem.kind === 'text') {
-            elemDiv.innerHTML = `
-                <label>Element ${idx + 1}: ${label}</label>
-                <textarea id="editElem${idx}" data-element-id="${elem.element_id}" data-kind="text">${content}</textarea>
-                <input type="text" id="editElemTailwind${idx}" placeholder="Tailwind classes" value="${elem.tailwind_classes || ''}" style="margin-top: 8px;">
+            elemCard.innerHTML = `
+                <div class="element-card-header">
+                    <span class="element-card-title">${capitalizeFirst(label)}</span>
+                    <span class="element-card-type">${elem.kind}</span>
+                </div>
+                <textarea id="editElem${idx}" data-element-id="${elem.element_id}" data-kind="text" style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; resize:vertical;">${content}</textarea>
+
+                <div class="style-row" style="margin-top: 12px;">
+                    <span class="style-label">Text Color</span>
+                    <div class="style-control">
+                        <input type="color" class="color-picker" id="elemColor${idx}" value="${getColorFromClasses(elem.tailwind_classes, 'text') || '#000000'}" onchange="updateElementStyle(${idx})">
+                        <div class="color-presets">
+                            ${COLOR_PRESETS.text.map(c => `
+                                <div class="color-preset" style="background:${c.value}" data-idx="${idx}" data-color="${c.value}" data-class="${c.class}" onclick="setElementColor(${idx}, '${c.value}', '${c.class}')"></div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="style-row">
+                    <span class="style-label">Font Size</span>
+                    <div class="style-control">
+                        <select class="font-size-select" id="elemFontSize${idx}" onchange="updateElementStyle(${idx})">
+                            ${FONT_SIZES.map(f => `<option value="${f.value}" ${hasClass(elem.tailwind_classes, f.value) ? 'selected' : ''}>${f.label}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="style-row">
+                    <span class="style-label">Font Weight</span>
+                    <div class="style-control">
+                        <div class="font-weight-btns">
+                            <button type="button" class="font-weight-btn ${hasClass(elem.tailwind_classes, 'font-normal') ? 'active' : ''}" data-weight="font-normal" onclick="setElementWeight(${idx}, 'font-normal')">Normal</button>
+                            <button type="button" class="font-weight-btn ${hasClass(elem.tailwind_classes, 'font-semibold') ? 'active' : ''}" data-weight="font-semibold" onclick="setElementWeight(${idx}, 'font-semibold')">Semi</button>
+                            <button type="button" class="font-weight-btn ${hasClass(elem.tailwind_classes, 'font-bold') ? 'active' : ''}" data-weight="font-bold" onclick="setElementWeight(${idx}, 'font-bold')">Bold</button>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="editElemTailwind${idx}" value="${elem.tailwind_classes || ''}">
             `;
         } else if (elem.kind === 'bullets') {
             const items = elem.content?.items?.map(i => typeof i === 'string' ? i : i.text).join('\n') || '';
-            elemDiv.innerHTML = `
-                <label>Element ${idx + 1}: ${label} (one item per line)</label>
-                <textarea id="editElem${idx}" data-element-id="${elem.element_id}" data-kind="bullets" rows="6">${items}</textarea>
-                <input type="text" id="editElemTailwind${idx}" placeholder="Tailwind classes" value="${elem.tailwind_classes || ''}" style="margin-top: 8px;">
+            elemCard.innerHTML = `
+                <div class="element-card-header">
+                    <span class="element-card-title">${capitalizeFirst(label)}</span>
+                    <span class="element-card-type">${elem.kind}</span>
+                </div>
+                <textarea id="editElem${idx}" data-element-id="${elem.element_id}" data-kind="bullets" rows="5" style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; resize:vertical;" placeholder="One item per line">${items}</textarea>
+
+                <div class="style-row" style="margin-top: 12px;">
+                    <span class="style-label">Text Color</span>
+                    <div class="style-control">
+                        <input type="color" class="color-picker" id="elemColor${idx}" value="${getColorFromClasses(elem.tailwind_classes, 'text') || '#000000'}" onchange="updateElementStyle(${idx})">
+                        <div class="color-presets">
+                            ${COLOR_PRESETS.text.map(c => `
+                                <div class="color-preset" style="background:${c.value}" data-idx="${idx}" data-color="${c.value}" data-class="${c.class}" onclick="setElementColor(${idx}, '${c.value}', '${c.class}')"></div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="editElemTailwind${idx}" value="${elem.tailwind_classes || ''}">
             `;
         } else {
-            elemDiv.innerHTML = `
-                <label>Element ${idx + 1}: ${label} (${elem.kind})</label>
-                <p style="color: #6b7280; font-size: 12px;">Edit this element in JSON mode</p>
+            elemCard.innerHTML = `
+                <div class="element-card-header">
+                    <span class="element-card-title">${capitalizeFirst(label)}</span>
+                    <span class="element-card-type">${elem.kind}</span>
+                </div>
+                <p style="color: #6b7280; font-size: 12px; margin: 0;">Edit this element in JSON mode</p>
             `;
         }
 
-        form.appendChild(elemDiv);
+        elementsSection.appendChild(elemCard);
     });
+
+    form.appendChild(elementsSection);
 }
+
+// Helper functions for the visual editor
+function capitalizeFirst(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function hasClass(classes, className) {
+    if (!classes) return false;
+    return classes.split(' ').includes(className);
+}
+
+function getColorFromClasses(classes, type) {
+    if (!classes) return null;
+    // Simple color extraction - in real implementation, map Tailwind classes to hex
+    const colorMap = {
+        'text-white': '#ffffff',
+        'text-black': '#000000',
+        'text-gray-600': '#4b5563',
+        'text-blue-500': '#3b82f6',
+        'text-purple-500': '#8b5cf6',
+    };
+    for (const [cls, hex] of Object.entries(colorMap)) {
+        if (classes.includes(cls)) return hex;
+    }
+    return null;
+}
+
+function selectTheme(themeId) {
+    // Remove selected from all
+    document.querySelectorAll('.theme-preset').forEach(el => el.classList.remove('selected'));
+    // Add selected to clicked
+    document.querySelector(`[data-theme="${themeId}"]`)?.classList.add('selected');
+
+    // Update hidden input with theme classes
+    const theme = THEME_PRESETS.find(t => t.id === themeId);
+    if (theme) {
+        document.getElementById('editSlideTailwind').value = theme.classes;
+    }
+}
+
+function setElementColor(idx, colorValue, colorClass) {
+    document.getElementById(`elemColor${idx}`).value = colorValue;
+    updateElementTailwindClass(idx, 'text-', colorClass);
+
+    // Highlight selected preset
+    document.querySelectorAll(`[data-idx="${idx}"]`).forEach(el => el.classList.remove('selected'));
+    event.target.classList.add('selected');
+}
+
+function setElementWeight(idx, weight) {
+    const btns = event.target.parentElement.querySelectorAll('.font-weight-btn');
+    btns.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+
+    updateElementTailwindClass(idx, 'font-', weight);
+}
+
+function updateElementStyle(idx) {
+    const fontSize = document.getElementById(`elemFontSize${idx}`)?.value;
+    if (fontSize) {
+        updateElementTailwindClass(idx, 'text-', fontSize);
+    }
+}
+
+function updateElementTailwindClass(idx, prefix, newClass) {
+    const input = document.getElementById(`editElemTailwind${idx}`);
+    if (!input) return;
+
+    let classes = input.value.split(' ').filter(c => c.trim());
+
+    // Remove existing classes with same prefix
+    classes = classes.filter(c => !c.startsWith(prefix));
+
+    // Add new class
+    if (newClass) {
+        classes.push(newClass);
+    }
+
+    input.value = classes.join(' ');
+}
+
+// Make editor functions globally available
+window.selectTheme = selectTheme;
+window.setElementColor = setElementColor;
+window.setElementWeight = setElementWeight;
+window.updateElementStyle = updateElementStyle;
 
 async function saveSlideChanges() {
     if (editingSlideIndex === null) return;
@@ -492,9 +738,9 @@ async function saveSlideChanges() {
         // Update the slide in the preview
         const wrapper = document.getElementById(`slide-wrapper-${result.slide_id}`);
         if (wrapper) {
-            const slideElement = wrapper.querySelector('.slide');
-            if (slideElement) {
-                slideElement.outerHTML = result.html;
+            const scaleContainer = wrapper.querySelector('.slide-scale-container');
+            if (scaleContainer) {
+                scaleContainer.innerHTML = result.html;
             }
         }
 
@@ -536,15 +782,14 @@ async function regenerateSlide() {
         const wrapper = document.getElementById(`slide-wrapper-${slideId}`) ||
                         document.querySelector(`[data-index="${editingSlideIndex}"]`);
         if (wrapper) {
-            const slideHtml = result.html;
-            // Keep only the slide content
-            const existingBtns = wrapper.querySelectorAll('.slide-edit-btn, .slide-badge');
-            wrapper.innerHTML = slideHtml;
-            existingBtns.forEach(btn => wrapper.appendChild(btn.cloneNode(true)));
+            const scaleContainer = wrapper.querySelector('.slide-scale-container');
+            if (scaleContainer) {
+                scaleContainer.innerHTML = result.html;
+            }
         }
 
         // Update modal preview
-        document.getElementById('editPreview').innerHTML = result.html;
+        document.getElementById('editPreview').innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
         document.getElementById('jsonEditArea').value = JSON.stringify(result.slide_data, null, 2);
         buildVisualEditForm(result.slide_data);
 
@@ -557,9 +802,93 @@ async function regenerateSlide() {
     }
 }
 
+// ==================== SLIDE LIST ====================
+
+function toggleSlideList() {
+    slideListVisible = !slideListVisible;
+    const panel = document.getElementById('slideListPanel');
+
+    if (slideListVisible) {
+        panel.style.display = 'flex';
+        loadSlideList();
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+async function loadSlideList() {
+    if (!currentArtifactId) {
+        document.getElementById('slideList').innerHTML = '<p style="padding:16px;color:#6b7280;text-align:center;">No presentation loaded</p>';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/artifacts/${currentArtifactId}/slides`);
+        if (!response.ok) throw new Error('Failed to load slides');
+
+        const data = await response.json();
+        slideListData = data.slides;
+
+        renderSlideList();
+
+    } catch (error) {
+        console.error('Error loading slide list:', error);
+        document.getElementById('slideList').innerHTML = '<p style="padding:16px;color:#dc3545;">Failed to load slides</p>';
+    }
+}
+
+function renderSlideList() {
+    const container = document.getElementById('slideList');
+
+    if (slideListData.length === 0) {
+        container.innerHTML = '<p style="padding:16px;color:#6b7280;text-align:center;">No slides yet</p>';
+        return;
+    }
+
+    container.innerHTML = slideListData.map((slide, idx) => `
+        <div class="slide-list-item" data-index="${idx}" onclick="scrollToSlide(${idx})">
+            <div class="slide-list-item-number">${idx + 1}</div>
+            <div class="slide-list-item-info">
+                <div class="slide-list-item-title">${slide.title || 'Untitled'}</div>
+                <div class="slide-list-item-type">${slide.layout || 'content'}</div>
+            </div>
+            <div class="slide-list-item-actions">
+                <button class="slide-list-action-btn" onclick="event.stopPropagation(); openEditModal(${idx})" title="Edit">✏️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function scrollToSlide(index) {
+    const wrapper = document.querySelector(`[data-index="${index}"]`);
+    if (wrapper) {
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Highlight briefly
+        wrapper.style.boxShadow = '0 0 0 4px #3b82f6';
+        setTimeout(() => {
+            wrapper.style.boxShadow = '';
+        }, 1500);
+    }
+
+    // Update active state in list
+    document.querySelectorAll('.slide-list-item').forEach(item => {
+        item.classList.toggle('active', parseInt(item.dataset.index) === index);
+    });
+}
+
+function updateSlideList(slideIndex, title) {
+    // Update local data
+    if (slideListData[slideIndex]) {
+        slideListData[slideIndex].title = title;
+        renderSlideList();
+    }
+}
+
 // Make functions globally available
 window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
 window.switchEditTab = switchEditTab;
 window.saveSlideChanges = saveSlideChanges;
 window.regenerateSlide = regenerateSlide;
+window.toggleSlideList = toggleSlideList;
+window.scrollToSlide = scrollToSlide;

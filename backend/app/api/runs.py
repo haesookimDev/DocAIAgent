@@ -20,17 +20,36 @@ from app.schemas.run import (
 )
 from app.services.agent_service import AgentService, get_agent_service
 from app.services.export_service import ExportService
+from app.services.storage_service import get_storage_service
 
 router = APIRouter()
 
-# In-memory storage for MVP (replace with database later)
-_runs: dict[str, dict] = {}
-_slidespecs: dict[str, dict] = {}
+
+def _get_storage():
+    """Get storage service instance."""
+    return get_storage_service()
+
+
+# Export for backward compatibility with artifacts.py
+def get_runs_storage() -> dict[str, dict]:
+    """Get runs storage (for internal use by other modules)."""
+    return _get_storage().get_all_runs()
+
+
+def get_slidespecs_storage() -> dict[str, dict]:
+    """Get slidespecs storage (for internal use by other modules)."""
+    return _get_storage().get_all_slidespecs()
+
+
+# Legacy names for artifacts.py compatibility
+_runs = property(lambda self: get_runs_storage())
+_slidespecs = property(lambda self: get_slidespecs_storage())
 
 
 @router.post("/runs", response_model=RunResponse)
 async def create_run(request: RunCreate):
     """Create a new document generation run."""
+    storage = _get_storage()
     run_id = str(uuid.uuid4())
     now = datetime.utcnow()
 
@@ -48,7 +67,7 @@ async def create_run(request: RunCreate):
         "request": request.model_dump(),
     }
 
-    _runs[run_id] = run_data
+    storage.save_run(run_id, run_data)
 
     return RunResponse(**run_data)
 
@@ -56,10 +75,13 @@ async def create_run(request: RunCreate):
 @router.get("/runs/{run_id}", response_model=RunResponse)
 async def get_run(run_id: str):
     """Get the status of a run."""
-    if run_id not in _runs:
+    storage = _get_storage()
+    run_data = storage.get_run(run_id)
+
+    if not run_data:
         raise HTTPException(status_code=404, detail="Run not found")
 
-    return RunResponse(**_runs[run_id])
+    return RunResponse(**run_data)
 
 
 @router.get("/runs/{run_id}/stream")
@@ -69,10 +91,12 @@ async def stream_run(run_id: str):
     This endpoint starts the generation process and streams real-time updates
     including slide HTML as it's generated.
     """
-    if run_id not in _runs:
+    storage = _get_storage()
+    run_data = storage.get_run(run_id)
+
+    if not run_data:
         raise HTTPException(status_code=404, detail="Run not found")
 
-    run_data = _runs[run_id]
     request = RunCreate(**run_data["request"])
 
     async def event_generator() -> AsyncGenerator[dict, None]:
@@ -83,6 +107,7 @@ async def stream_run(run_id: str):
             # Update run status
             run_data["status"] = RunStatus.PLANNING
             run_data["updated_at"] = datetime.utcnow()
+            storage.save_run(run_id, run_data)
 
             async for event in agent_service.generate_slides_stream(
                 prompt=request.prompt,
@@ -102,6 +127,7 @@ async def stream_run(run_id: str):
                     run_data["current_slide"] = event.data.get("current_slide")
                     run_data["total_slides"] = event.data.get("total_slides")
                     run_data["updated_at"] = datetime.utcnow()
+                    storage.save_run(run_id, run_data)
 
                 elif event.event == SSEEventType.RUN_COMPLETE:
                     run_data["status"] = RunStatus.COMPLETED
@@ -110,13 +136,18 @@ async def stream_run(run_id: str):
 
                     # Store slidespec
                     if "slidespec" in event.data:
-                        _slidespecs[run_id] = event.data["slidespec"]
-                        run_data["artifact_id"] = run_id  # Use run_id as artifact_id for MVP
+                        slidespec_data = event.data["slidespec"]
+                        slidespec_data["created_at"] = datetime.utcnow().isoformat()
+                        storage.save_slidespec(run_id, slidespec_data)
+                        run_data["artifact_id"] = run_id
+
+                    storage.save_run(run_id, run_data)
 
                 elif event.event == SSEEventType.RUN_ERROR:
                     run_data["status"] = RunStatus.FAILED
                     run_data["error"] = event.data.get("error")
                     run_data["updated_at"] = datetime.utcnow()
+                    storage.save_run(run_id, run_data)
 
                 # Yield event as SSE format
                 yield {
@@ -129,6 +160,7 @@ async def stream_run(run_id: str):
             run_data["status"] = RunStatus.FAILED
             run_data["error"] = str(e)
             run_data["updated_at"] = datetime.utcnow()
+            storage.save_run(run_id, run_data)
 
             error_event = {
                 "event": SSEEventType.RUN_ERROR.value,
@@ -143,18 +175,38 @@ async def stream_run(run_id: str):
 @router.post("/runs/{run_id}/cancel")
 async def cancel_run(run_id: str):
     """Cancel a running generation."""
-    if run_id not in _runs:
-        raise HTTPException(status_code=404, detail="Run not found")
+    storage = _get_storage()
+    run_data = storage.get_run(run_id)
 
-    run_data = _runs[run_id]
+    if not run_data:
+        raise HTTPException(status_code=404, detail="Run not found")
 
     if run_data["status"] in (RunStatus.COMPLETED, RunStatus.FAILED, RunStatus.CANCELLED):
         raise HTTPException(status_code=400, detail="Run cannot be cancelled")
 
     run_data["status"] = RunStatus.CANCELLED
     run_data["updated_at"] = datetime.utcnow()
+    storage.save_run(run_id, run_data)
 
     return {"message": "Run cancelled", "run_id": run_id}
+
+
+@router.delete("/runs/{run_id}")
+async def delete_run(run_id: str):
+    """Delete a run and its associated artifact."""
+    storage = _get_storage()
+    run_data = storage.get_run(run_id)
+
+    if not run_data:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Delete associated slidespec if exists
+    if run_data.get("artifact_id"):
+        storage.delete_slidespec(run_data["artifact_id"])
+
+    storage.delete_run(run_id)
+
+    return {"message": "Run deleted", "run_id": run_id}
 
 
 @router.get("/runs")
@@ -163,12 +215,12 @@ async def list_runs(
     offset: int = Query(default=0, ge=0),
 ):
     """List all runs."""
-    runs = list(_runs.values())
-    runs.sort(key=lambda x: x["created_at"], reverse=True)
+    storage = _get_storage()
+    runs, total = storage.list_runs(limit=limit, offset=offset)
 
     return {
-        "items": [RunResponse(**r) for r in runs[offset:offset + limit]],
-        "total": len(runs),
+        "items": [RunResponse(**r) for r in runs],
+        "total": total,
         "limit": limit,
         "offset": offset,
     }
@@ -178,6 +230,7 @@ async def list_runs(
 @router.post("/runs/generate-sync")
 async def generate_sync(request: RunCreate):
     """Synchronously generate slides (for testing, not recommended for production)."""
+    storage = _get_storage()
     run_id = str(uuid.uuid4())
     now = datetime.utcnow()
 
@@ -194,7 +247,7 @@ async def generate_sync(request: RunCreate):
         "updated_at": now,
         "request": request.model_dump(),
     }
-    _runs[run_id] = run_data
+    storage.save_run(run_id, run_data)
 
     try:
         agent_service = get_agent_service()
@@ -206,12 +259,16 @@ async def generate_sync(request: RunCreate):
             slide_count=request.slide_count,
         )
 
-        _slidespecs[run_id] = slidespec.model_dump()
+        slidespec_data = slidespec.model_dump()
+        slidespec_data["created_at"] = now.isoformat()
+        storage.save_slidespec(run_id, slidespec_data)
+
         run_data["status"] = RunStatus.COMPLETED
         run_data["progress"] = 100.0
         run_data["artifact_id"] = run_id
         run_data["total_slides"] = len(slidespec.slides)
         run_data["updated_at"] = datetime.utcnow()
+        storage.save_run(run_id, run_data)
 
         return {
             "run": RunResponse(**run_data),
@@ -222,4 +279,5 @@ async def generate_sync(request: RunCreate):
         run_data["status"] = RunStatus.FAILED
         run_data["error"] = str(e)
         run_data["updated_at"] = datetime.utcnow()
+        storage.save_run(run_id, run_data)
         raise HTTPException(status_code=500, detail=str(e))
