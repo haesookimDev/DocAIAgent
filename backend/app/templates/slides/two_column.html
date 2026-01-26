@@ -5,10 +5,10 @@
     <!-- Top accent bar -->
     <div class="absolute top-0 left-0 right-0 h-1 gradient-primary"></div>
 
-    <!-- Content -->
-    <div class="h-full flex flex-col px-12 py-10">
-        <!-- Header -->
-        <div class="mb-6">
+    <!-- Content - using percentage-based layout -->
+    <div class="h-full flex flex-col" style="padding: 5% 6%;">
+        <!-- Header - fixed proportion -->
+        <div style="flex: 0 0 auto; margin-bottom: 4%;">
             {% set ns = namespace(found=false) %}
             {% for element in elements %}
                 {% if element.role == 'title' and not ns.found %}
@@ -21,13 +21,14 @@
             {% endfor %}
         </div>
 
-        <!-- Two Column Body -->
-        <div class="flex-1 grid grid-cols-2 gap-8">
-            {# Left column #}
-            <div class="space-y-4">
-                {% set ns = namespace(count=0, total=0) %}
+        <!-- Two Column Body - flex grow to fill remaining space -->
+        <div class="flex-1 grid grid-cols-2 gap-6" style="min-height: 0;">
+            {# Left column - flex container #}
+            <div class="flex flex-col gap-3 overflow-hidden">
+                {% set ns = namespace(count=0, total=0, has_chart=false) %}
                 {% for element in elements if element.role != 'title' %}
                     {% set ns.total = ns.total + 1 %}
+                    {% if element.kind == 'chart' %}{% set ns.has_chart = true %}{% endif %}
                 {% endfor %}
                 {% set half = (ns.total / 2) | int %}
                 {% if half == 0 %}{% set half = 1 %}{% endif %}
@@ -36,11 +37,11 @@
                     {% set ns.count = ns.count + 1 %}
                     {% if ns.count <= half %}
                         {% if element.kind == 'text' %}
-                            <p class="text-sm text-slate-600 leading-relaxed animate-fade-in">
+                            <p class="text-sm text-slate-600 leading-relaxed animate-fade-in flex-shrink-0">
                                 {{ element.content.text }}
                             </p>
                         {% elif element.kind == 'bullets' %}
-                            <ul class="space-y-2 animate-slide-up">
+                            <ul class="space-y-2 animate-slide-up flex-shrink-0">
                                 {% for item in element.content['items'] %}
                                     <li class="flex items-start gap-2 text-sm text-slate-700">
                                         <span class="w-1.5 h-1.5 mt-1.5 bg-primary-500 rounded-full flex-shrink-0"></span>
@@ -53,11 +54,11 @@
                                 {% endfor %}
                             </ul>
                         {% elif element.kind == 'image' %}
-                            <div class="rounded-lg overflow-hidden shadow-md animate-fade-in">
+                            <div class="rounded-lg overflow-hidden shadow-md animate-fade-in flex-1" style="min-height: 20%;">
                                 {% if element.content.url %}
-                                    <img src="{{ element.content.url }}" alt="{{ element.content.alt_text | default('') }}" class="w-full h-auto max-h-40 object-cover">
+                                    <img src="{{ element.content.url }}" alt="{{ element.content.alt_text | default('') }}" class="w-full h-full object-cover">
                                 {% else %}
-                                    <div class="h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-400">
+                                    <div class="h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-400">
                                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
@@ -65,28 +66,28 @@
                                 {% endif %}
                             </div>
                         {% elif element.kind == 'chart' %}
-                            <div class="chart-container bg-white rounded-lg p-3 animate-fade-in border border-slate-200 {{ element.tailwind_classes }}"
+                            <div class="chart-container bg-white rounded-lg p-3 animate-fade-in border border-slate-200 flex-1 {{ element.tailwind_classes }}"
                                  data-chart='{{ element.content | tojson | safe }}'
-                                 style="height: 200px; min-height: 180px;">
-                                <canvas id="chart-{{ element.element_id }}" style="width: 100%; height: 100%;"></canvas>
+                                 style="min-height: 40%;">
+                                <canvas id="chart-{{ element.element_id }}" class="w-full h-full"></canvas>
                             </div>
                         {% endif %}
                     {% endif %}
                 {% endfor %}
             </div>
 
-            {# Right column #}
-            <div class="space-y-4 border-l border-slate-100 pl-8">
+            {# Right column - flex container #}
+            <div class="flex flex-col gap-3 overflow-hidden border-l border-slate-100 pl-6">
                 {% set ns = namespace(count=0) %}
                 {% for element in elements if element.role != 'title' %}
                     {% set ns.count = ns.count + 1 %}
                     {% if ns.count > half %}
                         {% if element.kind == 'text' %}
-                            <p class="text-sm text-slate-600 leading-relaxed animate-fade-in">
+                            <p class="text-sm text-slate-600 leading-relaxed animate-fade-in flex-shrink-0">
                                 {{ element.content.text }}
                             </p>
                         {% elif element.kind == 'bullets' %}
-                            <ul class="space-y-2 animate-slide-up">
+                            <ul class="space-y-2 animate-slide-up flex-shrink-0">
                                 {% for item in element.content['items'] %}
                                     <li class="flex items-start gap-2 text-sm text-slate-700">
                                         <span class="w-1.5 h-1.5 mt-1.5 bg-accent rounded-full flex-shrink-0"></span>
@@ -99,11 +100,11 @@
                                 {% endfor %}
                             </ul>
                         {% elif element.kind == 'image' %}
-                            <div class="rounded-lg overflow-hidden shadow-md animate-fade-in">
+                            <div class="rounded-lg overflow-hidden shadow-md animate-fade-in flex-1" style="min-height: 20%;">
                                 {% if element.content.url %}
-                                    <img src="{{ element.content.url }}" alt="{{ element.content.alt_text | default('') }}" class="w-full h-auto max-h-40 object-cover">
+                                    <img src="{{ element.content.url }}" alt="{{ element.content.alt_text | default('') }}" class="w-full h-full object-cover">
                                 {% else %}
-                                    <div class="h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-400">
+                                    <div class="h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-400">
                                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
@@ -111,10 +112,10 @@
                                 {% endif %}
                             </div>
                         {% elif element.kind == 'chart' %}
-                            <div class="chart-container bg-white rounded-lg p-3 animate-fade-in border border-slate-200 {{ element.tailwind_classes }}"
+                            <div class="chart-container bg-white rounded-lg p-3 animate-fade-in border border-slate-200 flex-1 {{ element.tailwind_classes }}"
                                  data-chart='{{ element.content | tojson | safe }}'
-                                 style="height: 200px; min-height: 180px;">
-                                <canvas id="chart-{{ element.element_id }}" style="width: 100%; height: 100%;"></canvas>
+                                 style="min-height: 40%;">
+                                <canvas id="chart-{{ element.element_id }}" class="w-full h-full"></canvas>
                             </div>
                         {% endif %}
                     {% endif %}
@@ -123,8 +124,8 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="absolute bottom-3 left-8 right-8 flex justify-between items-center text-xs border-t border-slate-100 pt-3">
+    <!-- Footer - absolute positioned at bottom -->
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-xs border-t border-slate-100" style="padding: 1.5% 4%;">
         {% if citations %}
         <span class="text-slate-400 flex gap-1">
             {% for citation in citations %}

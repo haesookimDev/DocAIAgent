@@ -11,7 +11,7 @@
     <div class="absolute bottom-1/4 left-1/4 w-48 h-48 bg-primary-500/10 rounded-full blur-3xl"></div>
 
     <!-- Content -->
-    <div class="relative h-full flex flex-col justify-center items-center px-16 py-12">
+    <div class="relative h-full flex flex-col justify-center items-center" style="padding: 5% 8%;">
         {% for element in elements %}
             {% if element.kind == 'text' %}
                 {% if element.role == 'quote' or loop.first %}
@@ -33,7 +33,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="absolute bottom-4 left-8 right-8 flex justify-between items-center text-xs">
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-xs" style="padding: 1.5% 4%;">
         {% if citations %}
         <span class="text-slate-500 flex gap-2">
             {% for citation in citations %}

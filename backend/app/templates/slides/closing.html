@@ -10,7 +10,7 @@
     </div>
 
     <!-- Content -->
-    <div class="relative h-full flex flex-col justify-center items-center text-center px-16 py-12">
+    <div class="relative h-full flex flex-col justify-center items-center text-center" style="padding: 5% 8%;">
         {% set has_title = false %}
         {% for element in elements %}
             {% if element.role == 'title' or (element.kind == 'text' and loop.first) %}
@@ -62,7 +62,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="absolute bottom-4 left-8 right-8 flex justify-end">
+    <div class="absolute bottom-0 left-0 right-0 flex justify-end" style="padding: 1.5% 4%;">
         <span class="bg-white/10 text-white/60 px-3 py-1 rounded-full text-xs font-medium">{{ slide_index + 1 }}</span>
     </div>
 </div>

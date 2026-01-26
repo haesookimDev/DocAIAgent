@@ -12,7 +12,7 @@
     </div>
 
     <!-- Content -->
-    <div class="relative h-full flex flex-col justify-center px-16 py-12">
+    <div class="relative h-full flex flex-col justify-center" style="padding: 5% 8%;">
         {% for element in elements %}
             {% if element.role == 'title' or (element.kind == 'text' and loop.first) %}
                 <div class="flex items-center gap-6 mb-4">
@@ -31,7 +31,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="absolute bottom-4 left-8 right-8 flex justify-between items-center">
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center" style="padding: 1.5% 4%;">
         <span></span>
         <span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-medium">
             {{ slide_index + 1 }}

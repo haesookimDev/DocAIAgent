@@ -6,9 +6,9 @@
     <div class="absolute top-0 left-0 right-0 h-1 gradient-primary"></div>
 
     <!-- Content -->
-    <div class="h-full flex flex-col px-12 py-10">
+    <div class="h-full flex flex-col" style="padding: 5% 6%;">
         <!-- Header -->
-        <div class="mb-6">
+        <div style="flex: 0 0 auto; margin-bottom: 4%;">
             {% set ns = namespace(found=false) %}
             {% for element in elements %}
                 {% if element.role == 'title' and not ns.found %}
@@ -22,7 +22,7 @@
         </div>
 
         <!-- Table Body -->
-        <div class="flex-1 overflow-auto">
+        <div class="flex-1 overflow-auto" style="min-height: 0;">
             {% for element in elements %}
                 {% if element.kind == 'table' %}
                     <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm animate-fade-in">
@@ -83,7 +83,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="absolute bottom-3 left-8 right-8 flex justify-between items-center text-xs border-t border-slate-100 pt-3">
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-xs border-t border-slate-100" style="padding: 1.5% 4%;">
         {% if citations %}
         <span class="text-slate-400 flex gap-2 flex-wrap">
             {% for citation in citations %}
