@@ -1,0 +1,32 @@
+{# Title Center Layout - 타이틀 슬라이드 #}
+<div class="slide slide-title-center" data-slide-id="{{ slide_id }}" data-layout="title_center">
+    <div class="slide-content" style="justify-content: center; align-items: center; text-align: center;">
+        {% for element in elements %}
+            {% if element.role == 'title' or (element.kind == 'text' and loop.first) %}
+                <h1 class="title animate-in" style="font-size: 48px; margin-bottom: 20px;">
+                    {{ element.content.text }}
+                </h1>
+            {% elif element.role == 'subtitle' or element.kind == 'text' %}
+                <p class="subtitle animate-in" style="font-size: 24px; max-width: 700px;">
+                    {{ element.content.text }}
+                </p>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if citations %}
+    <div class="slide-footer">
+        <span class="citations">
+            {% for citation in citations %}
+                <span class="citation-ref" title="{{ citation.quote | default('') }}">[{{ loop.index }}] {{ citation.title | default(citation.source | default('')) }}</span>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+    {% else %}
+    <div class="slide-footer">
+        <span></span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+    {% endif %}
+</div>

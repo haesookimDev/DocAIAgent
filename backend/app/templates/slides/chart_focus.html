@@ -1,0 +1,85 @@
+{# Chart Focus Layout - 차트 중심 슬라이드 #}
+<div class="slide slide-chart-focus" data-slide-id="{{ slide_id }}" data-layout="chart_focus">
+    <div class="slide-content">
+        <div class="slide-header">
+            {% for element in elements %}
+                {% if element.role == 'title' %}
+                    <h2 class="heading animate-in">{{ element.content.text }}</h2>
+                    {% break %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="slide-body" style="display: flex; gap: 30px;">
+            {# Chart area (left, larger) #}
+            <div style="flex: 2;">
+                {% for element in elements %}
+                    {% if element.kind == 'chart' %}
+                        <div class="chart-container animate-in" style="height: 350px;">
+                            {% if element.content.title %}
+                                <div style="position: absolute; top: 15px; left: 15px; font-weight: 600;">
+                                    {{ element.content.title }}
+                                </div>
+                            {% endif %}
+                            <div style="text-align: center;">
+                                <p style="font-size: 24px; color: var(--primary-color);">{{ element.content.chart_type | upper }} CHART</p>
+                                <p style="font-size: 14px; margin-top: 10px;">
+                                    {% for series in element.content.series %}
+                                        {{ series.name }}{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </p>
+                                {% if element.content.x_label or element.content.y_label %}
+                                    <p style="font-size: 12px; margin-top: 5px; color: var(--light-text);">
+                                        {% if element.content.x_label %}X: {{ element.content.x_label }}{% endif %}
+                                        {% if element.content.y_label %} | Y: {{ element.content.y_label }}{% endif %}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% break %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {# Key insights (right, smaller) #}
+            <div style="flex: 1;">
+                {% for element in elements %}
+                    {% if element.kind == 'bullets' %}
+                        <div style="margin-bottom: 15px;">
+                            <p style="font-weight: 600; font-size: 14px; margin-bottom: 10px; color: var(--primary-color);">Key Insights</p>
+                            <ul class="bullets animate-in" style="font-size: 14px;">
+                                {% for item in element.content.items %}
+                                    {% if item is string %}
+                                        <li style="margin-bottom: 8px;">{{ item }}</li>
+                                    {% else %}
+                                        <li style="margin-bottom: 8px;">{{ item.text }}</li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% break %}
+                    {% elif element.kind == 'text' and element.role != 'title' %}
+                        <p class="body-text animate-in" style="font-size: 14px;">{{ element.content.text }}</p>
+                        {% break %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% if citations %}
+    <div class="slide-footer">
+        <span class="citations">
+            {% for citation in citations %}
+                <span class="citation-ref">[{{ loop.index }}] {{ citation.source | default(citation.title | default('')) }}</span>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+    {% else %}
+    <div class="slide-footer">
+        <span></span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+    {% endif %}
+</div>

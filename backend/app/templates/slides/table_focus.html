@@ -1,0 +1,75 @@
+{# Table Focus Layout - 표 중심 슬라이드 #}
+<div class="slide slide-table-focus" data-slide-id="{{ slide_id }}" data-layout="table_focus">
+    <div class="slide-content">
+        <div class="slide-header">
+            {% for element in elements %}
+                {% if element.role == 'title' %}
+                    <h2 class="heading animate-in">{{ element.content.text }}</h2>
+                    {% break %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="slide-body">
+            {% for element in elements %}
+                {% if element.kind == 'table' %}
+                    <div class="table-container animate-in">
+                        {% if element.content.title %}
+                            <p style="font-weight: 600; margin-bottom: 12px; font-size: 16px;">{{ element.content.title }}</p>
+                        {% endif %}
+                        <table style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    {% for col in element.content.columns %}
+                                        <th style="padding: 10px 12px;">{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in element.content.rows %}
+                                    <tr>
+                                        {% for cell in row %}
+                                            <td style="padding: 8px 12px;">
+                                                {% if cell is number %}
+                                                    {{ "{:,.0f}".format(cell) if cell == cell|int else "{:,.2f}".format(cell) }}
+                                                {% else %}
+                                                    {{ cell if cell is not none else '-' }}
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% break %}
+                {% endif %}
+            {% endfor %}
+
+            {# Additional notes below table #}
+            {% for element in elements %}
+                {% if element.kind == 'text' and element.role != 'title' %}
+                    <p class="body-text animate-in" style="font-size: 14px; margin-top: 20px; color: var(--light-text);">
+                        {{ element.content.text }}
+                    </p>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if citations %}
+    <div class="slide-footer">
+        <span class="citations">
+            {% for citation in citations %}
+                <span class="citation-ref">[{{ loop.index }}] {{ citation.source | default('') }}</span>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+    {% else %}
+    <div class="slide-footer">
+        <span></span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+    {% endif %}
+</div>

@@ -1,0 +1,113 @@
+{# Two Column Layout - 2컬럼 컨텐츠 #}
+<div class="slide slide-two-column" data-slide-id="{{ slide_id }}" data-layout="two_column">
+    <div class="slide-content">
+        <div class="slide-header">
+            {% for element in elements %}
+                {% if element.role == 'title' %}
+                    <h2 class="heading animate-in">{{ element.content.text }}</h2>
+                    {% break %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="slide-body">
+            <div class="two-column">
+                {# Left column - first half of non-title elements #}
+                <div class="column">
+                    {% set ns = namespace(count=0, total=0) %}
+                    {% for element in elements if element.role != 'title' %}
+                        {% set ns.total = ns.total + 1 %}
+                    {% endfor %}
+                    {% set half = (ns.total / 2) | int %}
+                    {% if half == 0 %}{% set half = 1 %}{% endif %}
+
+                    {% for element in elements if element.role != 'title' %}
+                        {% set ns.count = ns.count + 1 %}
+                        {% if ns.count <= half %}
+                            {% if element.kind == 'text' %}
+                                <p class="body-text animate-in" style="margin-bottom: 15px;">
+                                    {{ element.content.text }}
+                                </p>
+                            {% elif element.kind == 'bullets' %}
+                                <ul class="bullets animate-in">
+                                    {% for item in element.content.items %}
+                                        {% if item is string %}
+                                            <li>{{ item }}</li>
+                                        {% else %}
+                                            <li>{{ item.text }}</li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                            {% elif element.kind == 'image' %}
+                                <div class="image-container animate-in" style="max-height: 200px;">
+                                    {% if element.content.url %}
+                                        <img src="{{ element.content.url }}" alt="{{ element.content.alt_text | default('') }}">
+                                    {% else %}
+                                        <div class="image-placeholder" style="height: 150px;">{{ element.content.alt_text | default('Image') }}</div>
+                                    {% endif %}
+                                </div>
+                            {% elif element.kind == 'chart' %}
+                                <div class="chart-container animate-in" style="height: 200px;">
+                                    <span>{{ element.content.chart_type | upper }}: {{ element.content.title | default('') }}</span>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                {# Right column - second half #}
+                <div class="column">
+                    {% set ns = namespace(count=0) %}
+                    {% for element in elements if element.role != 'title' %}
+                        {% set ns.count = ns.count + 1 %}
+                        {% if ns.count > half %}
+                            {% if element.kind == 'text' %}
+                                <p class="body-text animate-in" style="margin-bottom: 15px;">
+                                    {{ element.content.text }}
+                                </p>
+                            {% elif element.kind == 'bullets' %}
+                                <ul class="bullets animate-in">
+                                    {% for item in element.content.items %}
+                                        {% if item is string %}
+                                            <li>{{ item }}</li>
+                                        {% else %}
+                                            <li>{{ item.text }}</li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                            {% elif element.kind == 'image' %}
+                                <div class="image-container animate-in" style="max-height: 200px;">
+                                    {% if element.content.url %}
+                                        <img src="{{ element.content.url }}" alt="{{ element.content.alt_text | default('') }}">
+                                    {% else %}
+                                        <div class="image-placeholder" style="height: 150px;">{{ element.content.alt_text | default('Image') }}</div>
+                                    {% endif %}
+                                </div>
+                            {% elif element.kind == 'chart' %}
+                                <div class="chart-container animate-in" style="height: 200px;">
+                                    <span>{{ element.content.chart_type | upper }}: {{ element.content.title | default('') }}</span>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if citations %}
+    <div class="slide-footer">
+        <span class="citations">
+            {% for citation in citations %}
+                <span class="citation-ref">[{{ loop.index }}]</span>{% if not loop.last %} {% endif %}
+            {% endfor %}
+        </span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+    {% else %}
+    <div class="slide-footer">
+        <span></span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+    {% endif %}
+</div>

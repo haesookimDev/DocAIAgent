@@ -1,0 +1,36 @@
+{# Quote Center Layout - 인용문 중심 슬라이드 #}
+<div class="slide slide-quote-center" data-slide-id="{{ slide_id }}" data-layout="quote_center">
+    <div class="slide-content" style="justify-content: center; align-items: center;">
+        {% for element in elements %}
+            {% if element.kind == 'text' %}
+                {% if element.role == 'quote' or loop.first %}
+                    <div class="quote animate-in" style="max-width: 800px;">
+                        <p style="font-size: 28px; line-height: 1.5;">
+                            {{ element.content.text }}
+                        </p>
+                    </div>
+                {% elif element.role == 'source' or element.role == 'attribution' %}
+                    <p class="quote-source animate-in" style="margin-top: 30px;">
+                        — {{ element.content.text }}
+                    </p>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if citations %}
+    <div class="slide-footer">
+        <span class="citations">
+            {% for citation in citations %}
+                <span class="citation-ref">[{{ loop.index }}] {{ citation.title | default(citation.source | default('')) }}</span>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+    {% else %}
+    <div class="slide-footer">
+        <span></span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+    {% endif %}
+</div>

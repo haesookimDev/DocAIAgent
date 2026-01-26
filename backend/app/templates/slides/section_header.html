@@ -1,0 +1,23 @@
+{# Section Header Layout - 섹션 구분 슬라이드 #}
+<div class="slide slide-section-header" data-slide-id="{{ slide_id }}" data-layout="section_header">
+    <div class="slide-content" style="justify-content: center;">
+        <div style="border-left: 5px solid var(--accent-color); padding-left: 30px;">
+            {% for element in elements %}
+                {% if element.role == 'title' or (element.kind == 'text' and loop.first) %}
+                    <h1 class="section-title animate-in" style="font-size: 42px; margin-bottom: 15px;">
+                        {{ element.content.text }}
+                    </h1>
+                {% elif element.role == 'subtitle' or element.kind == 'text' %}
+                    <p class="subtitle animate-in" style="font-size: 20px; color: var(--light-text);">
+                        {{ element.content.text }}
+                    </p>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="slide-footer">
+        <span></span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+</div>

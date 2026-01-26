@@ -1,0 +1,54 @@
+{# Closing Layout - 마무리 슬라이드 #}
+<div class="slide slide-closing" data-slide-id="{{ slide_id }}" data-layout="closing">
+    <div class="slide-content" style="justify-content: center; align-items: center; text-align: center;">
+        {% set has_title = false %}
+        {% for element in elements %}
+            {% if element.role == 'title' or (element.kind == 'text' and loop.first) %}
+                {% set has_title = true %}
+                <h1 class="title animate-in" style="font-size: 42px; margin-bottom: 30px;">
+                    {{ element.content.text }}
+                </h1>
+            {% endif %}
+        {% endfor %}
+
+        {% if not has_title %}
+            <h1 class="title animate-in" style="font-size: 42px; margin-bottom: 30px;">
+                감사합니다
+            </h1>
+        {% endif %}
+
+        {% for element in elements %}
+            {% if element.role != 'title' and not loop.first %}
+                {% if element.kind == 'text' %}
+                    <p class="subtitle animate-in" style="font-size: 20px; margin-bottom: 15px; max-width: 600px;">
+                        {{ element.content.text }}
+                    </p>
+                {% elif element.kind == 'bullets' %}
+                    <div class="animate-in" style="text-align: left; margin-top: 20px;">
+                        <ul class="bullets" style="font-size: 16px;">
+                            {% for item in element.content.items %}
+                                {% if item is string %}
+                                    <li>{{ item }}</li>
+                                {% else %}
+                                    <li>{{ item.text }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+
+        {# Contact info or additional details #}
+        <div class="animate-in" style="margin-top: 50px; padding-top: 30px; border-top: 1px solid var(--border-color);">
+            <p style="font-size: 14px; color: var(--light-text);">
+                Questions? Contact us for more information.
+            </p>
+        </div>
+    </div>
+
+    <div class="slide-footer">
+        <span></span>
+        <span class="slide-number">{{ slide_index + 1 }}</span>
+    </div>
+</div>
