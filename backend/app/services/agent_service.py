@@ -36,8 +36,8 @@ Rules:
 - Last section should be conclusion/next steps
 - Output ONLY valid JSON, no explanations"""
 
-SLIDESPEC_SYSTEM_PROMPT = """You are a presentation content generator that creates detailed slide specifications.
-Given an outline and requirements, generate a complete SlideSpec JSON.
+SLIDESPEC_SYSTEM_PROMPT = """You are a presentation content generator that creates detailed slide specifications with custom Tailwind CSS styling.
+Given an outline and requirements, generate a complete SlideSpec JSON with creative styling.
 
 The output must be a valid SlideSpec JSON following this structure:
 {
@@ -54,12 +54,14 @@ The output must be a valid SlideSpec JSON following this structure:
       "slide_id": "s1",
       "type": "title|section|content|closing",
       "layout": {"layout_id": "layout_name"},
+      "tailwind_classes": "optional custom classes for slide container",
       "elements": [
         {
           "element_id": "s1_e1",
           "kind": "text|bullets|image|chart|table",
           "role": "title|subtitle|body|visual",
-          "content": {...}
+          "content": {...},
+          "tailwind_classes": "optional custom Tailwind classes"
         }
       ],
       "speaker_notes": "optional"
@@ -84,12 +86,34 @@ Element content formats:
 - chart: {"chart_type": "bar|line|pie", "title": "...", "series": [{"name": "...", "data": [{"x": "...", "y": 10}]}]}
 - image: {"alt_text": "description", "caption": "optional"}
 
+Tailwind CSS Styling Guidelines:
+You can use "tailwind_classes" on slides and elements for custom styling.
+
+Available Tailwind classes (using CDN):
+- Colors: text-red-500, bg-blue-100, border-green-300, etc.
+- Custom colors: primary-50 to primary-900, accent, accent-light, accent-dark
+- Typography: text-sm, text-lg, text-xl, text-2xl, font-bold, font-light, italic, tracking-wide
+- Spacing: p-4, px-6, py-2, m-4, mx-auto, gap-4
+- Layout: flex, grid, items-center, justify-center, space-y-4
+- Effects: shadow-lg, rounded-xl, opacity-80, blur-sm
+- Animations: animate-pulse, animate-bounce, transition-all
+- Borders: border, border-2, border-dashed, rounded-full
+- Backgrounds: bg-gradient-to-r, from-purple-500, to-pink-500
+
+Example tailwind_classes usage:
+- Slide: "bg-gradient-to-br from-indigo-900 to-purple-900"
+- Title: "text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
+- Text: "text-lg text-gray-300 leading-relaxed"
+- Bullets: "text-emerald-400 font-medium"
+
 Rules:
 - slide_id format: s1, s2, s3...
 - element_id format: s1_e1, s1_e2...
 - Keep bullet points concise (max 8 per slide)
 - Use appropriate layouts for content type
 - Add speaker notes with key talking points
+- Use tailwind_classes creatively to enhance visual appeal
+- Match styling to the presentation's tone (professional, creative, playful, etc.)
 - Output ONLY valid JSON"""
 
 

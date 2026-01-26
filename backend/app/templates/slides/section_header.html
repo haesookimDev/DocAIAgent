@@ -1,5 +1,5 @@
 {# Section Header Layout - 섹션 구분 슬라이드 (Tailwind) #}
-<div class="slide bg-white relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl"
+<div class="slide bg-white relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl {{ slide_tailwind_classes }}"
      data-slide-id="{{ slide_id }}" data-layout="section_header">
 
     <!-- Decorative gradient bar -->
@@ -19,11 +19,11 @@
                     <div class="w-16 h-1 bg-gradient-to-r from-accent to-primary-500 rounded-full"></div>
                     <span class="text-accent font-semibold text-sm uppercase tracking-wider">Section</span>
                 </div>
-                <h1 class="text-4xl font-bold text-slate-800 mb-4 animate-slide-up leading-tight">
+                <h1 class="text-4xl font-bold text-slate-800 mb-4 animate-slide-up leading-tight {{ element.tailwind_classes }}">
                     {{ element.content.text }}
                 </h1>
             {% elif element.role == 'subtitle' or element.kind == 'text' %}
-                <p class="text-lg text-slate-500 max-w-xl animate-slide-up delay-100 leading-relaxed">
+                <p class="text-lg text-slate-500 max-w-xl animate-slide-up delay-100 leading-relaxed {{ element.tailwind_classes }}">
                     {{ element.content.text }}
                 </p>
             {% endif %}

@@ -72,6 +72,7 @@ class HTMLSlideRenderer:
                 "content": elem.content,
                 "citations": [c.model_dump() for c in elem.citations] if elem.citations else [],
                 "style_overrides": elem.style_overrides.model_dump() if elem.style_overrides else None,
+                "tailwind_classes": elem.tailwind_classes or "",
             })
 
         # Prepare citations data
@@ -89,6 +90,7 @@ class HTMLSlideRenderer:
             "elements": elements,
             "citations": citations,
             "speaker_notes": slide.speaker_notes,
+            "slide_tailwind_classes": slide.tailwind_classes or "",
         }
 
         return template.render(**context)

@@ -1,5 +1,5 @@
 {# One Column Layout - 단일 컬럼 컨텐츠 (Tailwind) #}
-<div class="slide bg-white relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl"
+<div class="slide bg-white relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl {{ slide_tailwind_classes }}"
      data-slide-id="{{ slide_id }}" data-layout="one_column">
 
     <!-- Top accent bar -->
@@ -12,7 +12,7 @@
             {% set ns = namespace(found=false) %}
             {% for element in elements %}
                 {% if element.role == 'title' and not ns.found %}
-                    <h2 class="text-2xl font-bold text-slate-800 animate-slide-up flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-slate-800 animate-slide-up flex items-center gap-3 {{ element.tailwind_classes }}">
                         <span class="w-1.5 h-8 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
                         {{ element.content.text }}
                     </h2>
@@ -26,11 +26,11 @@
             {% for element in elements %}
                 {% if element.role != 'title' %}
                     {% if element.kind == 'text' %}
-                        <p class="text-base text-slate-600 leading-relaxed animate-fade-in">
+                        <p class="text-base text-slate-600 leading-relaxed animate-fade-in {{ element.tailwind_classes }}">
                             {{ element.content.text }}
                         </p>
                     {% elif element.kind == 'bullets' %}
-                        <ul class="space-y-3 animate-slide-up">
+                        <ul class="space-y-3 animate-slide-up {{ element.tailwind_classes }}">
                             {% for item in element.content['items'] %}
                                 <li class="flex items-start gap-3 text-slate-700">
                                     <span class="w-2 h-2 mt-2 bg-gradient-to-r from-primary-500 to-accent rounded-full flex-shrink-0"></span>

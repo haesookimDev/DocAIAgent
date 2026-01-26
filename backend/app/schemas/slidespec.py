@@ -109,6 +109,7 @@ class Element(BaseModel):
     content: dict[str, Any]  # Type depends on kind
     citations: list[Citation] | None = None
     style_overrides: StyleOverrides | None = None
+    tailwind_classes: str | None = Field(None, max_length=1000, description="Custom Tailwind CSS classes for this element")
     extensions: dict[str, Any] | None = None
 
 
@@ -122,6 +123,7 @@ class Slide(BaseModel):
     elements: list[Element] = Field(default_factory=list, max_length=200)
     citations: list[Citation] | None = None
     speaker_notes: str | None = Field(None, max_length=10000)
+    tailwind_classes: str | None = Field(None, max_length=1000, description="Custom Tailwind CSS classes for the slide container")
     extensions: dict[str, Any] | None = None
 
 
