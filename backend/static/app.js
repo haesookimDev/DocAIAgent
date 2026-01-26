@@ -26,9 +26,35 @@ let slideListData = [];
 let currentSlideSpec = null;  // Current slide spec being edited
 let previewDebounceTimer = null;  // For debouncing preview updates
 
+// Scale edit preview slide to fit container
+function scaleEditPreviewSlide() {
+    const container = document.querySelector('.edit-preview-container');
+    const slide = document.querySelector('.edit-preview .slide');
+    if (!container || !slide) return;
+
+    // Original slide dimensions
+    const slideWidth = 960;
+
+    // Get container width
+    const containerWidth = container.clientWidth;
+
+    // Calculate scale to fit
+    const scale = containerWidth / slideWidth;
+
+    // Apply scale
+    slide.style.transform = `scale(${scale})`;
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
+
+    // Handle window resize for edit preview
+    window.addEventListener('resize', () => {
+        if (document.getElementById('editModal').style.display !== 'none') {
+            scaleEditPreviewSlide();
+        }
+    });
 });
 
 function setupEventListeners() {
@@ -497,6 +523,8 @@ async function openEditModal(slideIndex) {
         editPreview.innerHTML = `<div class="edit-preview-container">${data.html}</div>`;
         // Initialize charts in the edit preview
         initializeChartsInElement(editPreview);
+        // Scale slide to fit container
+        setTimeout(scaleEditPreviewSlide, 50);
 
         // Fetch full slide spec for JSON editor
         const specResponse = await fetch(`${API_BASE}/artifacts/${currentArtifactId}/slidespec`);
@@ -870,6 +898,8 @@ async function updatePreviewInRealTime() {
         editPreview.innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
         // Initialize charts in the updated preview
         initializeChartsInElement(editPreview);
+        // Scale slide to fit container
+        setTimeout(scaleEditPreviewSlide, 50);
 
         // Also update JSON editor if in visual mode
         const isJsonMode = document.querySelector('.edit-tab[data-tab="json"]')?.classList.contains('active');
@@ -994,6 +1024,8 @@ async function updatePreviewFromJson() {
         editPreview.innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
         // Initialize charts in the updated preview
         initializeChartsInElement(editPreview);
+        // Scale slide to fit container
+        setTimeout(scaleEditPreviewSlide, 50);
 
         // Update current slide spec to keep in sync
         currentSlideSpec = slideData;
@@ -1170,6 +1202,8 @@ async function regenerateSlide() {
         editPreview.innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
         // Initialize charts in the edit preview
         initializeChartsInElement(editPreview);
+        // Scale slide to fit container
+        setTimeout(scaleEditPreviewSlide, 50);
         document.getElementById('jsonEditArea').value = JSON.stringify(result.slide_data, null, 2);
         buildVisualEditForm(result.slide_data);
 

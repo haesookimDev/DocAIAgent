@@ -480,16 +480,25 @@
             border-radius: 8px;
             padding: 16px;
             overflow: hidden;
-            height: fit-content;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .edit-preview-container {
-            width: 480px; /* 960 * 0.5 */
-            height: 270px; /* 540 * 0.5 */
+            width: 100%;
+            aspect-ratio: 16 / 9;
             overflow: hidden;
+            position: relative;
         }
         .edit-preview .slide {
-            transform: scale(0.5);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 960px;
+            height: 540px;
             transform-origin: top left;
+            /* Scale is set dynamically via JS, but default to fit ~400px width */
+            transform: scale(0.45);
         }
         .edit-form {
             display: flex;
