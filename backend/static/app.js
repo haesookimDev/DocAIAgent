@@ -305,3 +305,261 @@ async function downloadArtifact(format) {
         alert(`Failed to download: ${error.message}`);
     }
 }
+
+// ==================== SLIDE EDITING ====================
+
+async function openEditModal(slideIndex) {
+    editingSlideIndex = slideIndex;
+
+    // Show modal
+    const modal = document.getElementById('editModal');
+    modal.style.display = 'flex';
+
+    document.getElementById('editSlideNumber').textContent = slideIndex + 1;
+
+    // Fetch slide data
+    try {
+        const response = await fetch(`${API_BASE}/artifacts/${currentArtifactId}/slides/${slideIndex}`);
+        if (!response.ok) throw new Error('Failed to fetch slide');
+
+        const data = await response.json();
+        currentSlideData[slideIndex] = data;
+
+        // Update preview
+        document.getElementById('editPreview').innerHTML = data.html;
+
+        // Fetch full slide spec for JSON editor
+        const specResponse = await fetch(`${API_BASE}/artifacts/${currentArtifactId}/slidespec`);
+        const spec = await specResponse.json();
+        const slideSpec = spec.slides[slideIndex];
+
+        // Populate JSON editor
+        document.getElementById('jsonEditArea').value = JSON.stringify(slideSpec, null, 2);
+
+        // Build visual edit form
+        buildVisualEditForm(slideSpec);
+
+    } catch (error) {
+        console.error('Error loading slide:', error);
+        alert('Failed to load slide for editing');
+    }
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+    editingSlideIndex = null;
+}
+
+function switchEditTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('.edit-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+
+    // Show/hide panels
+    document.getElementById('visualEditor').style.display = tab === 'visual' ? 'grid' : 'none';
+    document.getElementById('jsonEditor').style.display = tab === 'json' ? 'block' : 'none';
+}
+
+function buildVisualEditForm(slideSpec) {
+    const form = document.getElementById('editForm');
+    form.innerHTML = '';
+
+    // Layout selector
+    const layoutField = document.createElement('div');
+    layoutField.className = 'edit-field';
+    layoutField.innerHTML = `
+        <label>Layout</label>
+        <select id="editLayout">
+            <option value="title_center" ${slideSpec.layout?.layout_id === 'title_center' ? 'selected' : ''}>Title Center</option>
+            <option value="section_header" ${slideSpec.layout?.layout_id === 'section_header' ? 'selected' : ''}>Section Header</option>
+            <option value="one_column" ${slideSpec.layout?.layout_id === 'one_column' ? 'selected' : ''}>One Column</option>
+            <option value="two_column" ${slideSpec.layout?.layout_id === 'two_column' ? 'selected' : ''}>Two Column</option>
+            <option value="quote_center" ${slideSpec.layout?.layout_id === 'quote_center' ? 'selected' : ''}>Quote Center</option>
+            <option value="closing" ${slideSpec.layout?.layout_id === 'closing' ? 'selected' : ''}>Closing</option>
+        </select>
+    `;
+    form.appendChild(layoutField);
+
+    // Tailwind classes for slide
+    const tailwindField = document.createElement('div');
+    tailwindField.className = 'edit-field';
+    tailwindField.innerHTML = `
+        <label>Slide Tailwind Classes</label>
+        <input type="text" id="editSlideTailwind" value="${slideSpec.tailwind_classes || ''}" placeholder="e.g., bg-gradient-to-br from-purple-900 to-indigo-900">
+    `;
+    form.appendChild(tailwindField);
+
+    // Elements
+    slideSpec.elements?.forEach((elem, idx) => {
+        const elemDiv = document.createElement('div');
+        elemDiv.className = 'edit-field';
+        elemDiv.style.borderTop = '1px solid #e5e7eb';
+        elemDiv.style.paddingTop = '16px';
+
+        const label = elem.role || elem.kind;
+        const content = elem.content?.text || elem.content?.items?.join('\n') || '';
+
+        if (elem.kind === 'text') {
+            elemDiv.innerHTML = `
+                <label>Element ${idx + 1}: ${label}</label>
+                <textarea id="editElem${idx}" data-element-id="${elem.element_id}" data-kind="text">${content}</textarea>
+                <input type="text" id="editElemTailwind${idx}" placeholder="Tailwind classes" value="${elem.tailwind_classes || ''}" style="margin-top: 8px;">
+            `;
+        } else if (elem.kind === 'bullets') {
+            const items = elem.content?.items?.map(i => typeof i === 'string' ? i : i.text).join('\n') || '';
+            elemDiv.innerHTML = `
+                <label>Element ${idx + 1}: ${label} (one item per line)</label>
+                <textarea id="editElem${idx}" data-element-id="${elem.element_id}" data-kind="bullets" rows="6">${items}</textarea>
+                <input type="text" id="editElemTailwind${idx}" placeholder="Tailwind classes" value="${elem.tailwind_classes || ''}" style="margin-top: 8px;">
+            `;
+        } else {
+            elemDiv.innerHTML = `
+                <label>Element ${idx + 1}: ${label} (${elem.kind})</label>
+                <p style="color: #6b7280; font-size: 12px;">Edit this element in JSON mode</p>
+            `;
+        }
+
+        form.appendChild(elemDiv);
+    });
+}
+
+async function saveSlideChanges() {
+    if (editingSlideIndex === null) return;
+
+    try {
+        // Check which tab is active
+        const isJsonMode = document.querySelector('.edit-tab[data-tab="json"]').classList.contains('active');
+
+        let slideData;
+
+        if (isJsonMode) {
+            // Get JSON from editor
+            const jsonText = document.getElementById('jsonEditArea').value;
+            slideData = JSON.parse(jsonText);
+        } else {
+            // Build slide data from visual form
+            const specResponse = await fetch(`${API_BASE}/artifacts/${currentArtifactId}/slidespec`);
+            const spec = await specResponse.json();
+            slideData = { ...spec.slides[editingSlideIndex] };
+
+            // Update layout
+            slideData.layout = { layout_id: document.getElementById('editLayout').value };
+
+            // Update slide tailwind classes
+            slideData.tailwind_classes = document.getElementById('editSlideTailwind').value || null;
+
+            // Update elements
+            slideData.elements.forEach((elem, idx) => {
+                const textInput = document.getElementById(`editElem${idx}`);
+                const tailwindInput = document.getElementById(`editElemTailwind${idx}`);
+
+                if (textInput) {
+                    const kind = textInput.dataset.kind;
+                    if (kind === 'text') {
+                        elem.content = { text: textInput.value };
+                    } else if (kind === 'bullets') {
+                        const items = textInput.value.split('\n').filter(item => item.trim());
+                        elem.content = { items: items };
+                    }
+                }
+
+                if (tailwindInput) {
+                    elem.tailwind_classes = tailwindInput.value || null;
+                }
+            });
+        }
+
+        updateStatus('Saving changes...');
+
+        // Send update to server
+        const response = await fetch(
+            `${API_BASE}/artifacts/${currentArtifactId}/slides/${editingSlideIndex}`,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(slideData),
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to save');
+        }
+
+        const result = await response.json();
+
+        // Update the slide in the preview
+        const wrapper = document.getElementById(`slide-wrapper-${result.slide_id}`);
+        if (wrapper) {
+            const slideElement = wrapper.querySelector('.slide');
+            if (slideElement) {
+                slideElement.outerHTML = result.html;
+            }
+        }
+
+        updateStatus('Changes saved!');
+        closeEditModal();
+
+    } catch (error) {
+        console.error('Save error:', error);
+        alert(`Failed to save: ${error.message}`);
+        updateStatus('Save failed');
+    }
+}
+
+async function regenerateSlide() {
+    if (editingSlideIndex === null) return;
+
+    const prompt = window.prompt('Enter any specific instructions for regeneration (optional):');
+
+    try {
+        updateStatus('Regenerating slide...');
+
+        const response = await fetch(
+            `${API_BASE}/artifacts/${currentArtifactId}/slides/${editingSlideIndex}/regenerate`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt || '' }),
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to regenerate');
+        }
+
+        const result = await response.json();
+
+        // Update the slide in preview
+        const slideId = result.slide_id;
+        const wrapper = document.getElementById(`slide-wrapper-${slideId}`) ||
+                        document.querySelector(`[data-index="${editingSlideIndex}"]`);
+        if (wrapper) {
+            const slideHtml = result.html;
+            // Keep only the slide content
+            const existingBtns = wrapper.querySelectorAll('.slide-edit-btn, .slide-badge');
+            wrapper.innerHTML = slideHtml;
+            existingBtns.forEach(btn => wrapper.appendChild(btn.cloneNode(true)));
+        }
+
+        // Update modal preview
+        document.getElementById('editPreview').innerHTML = result.html;
+        document.getElementById('jsonEditArea').value = JSON.stringify(result.slide_data, null, 2);
+        buildVisualEditForm(result.slide_data);
+
+        updateStatus('Slide regenerated!');
+
+    } catch (error) {
+        console.error('Regenerate error:', error);
+        alert(`Failed to regenerate: ${error.message}`);
+        updateStatus('Regeneration failed');
+    }
+}
+
+// Make functions globally available
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.switchEditTab = switchEditTab;
+window.saveSlideChanges = saveSlideChanges;
+window.regenerateSlide = regenerateSlide;
