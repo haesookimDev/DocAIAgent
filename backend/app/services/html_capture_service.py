@@ -156,25 +156,52 @@ function initializeCharts() {{
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: false,
+                    layout: {{
+                        padding: {{ top: 10, right: 15, bottom: 10, left: 15 }}
+                    }},
                     plugins: {{
                         legend: {{
                             display: series.length > 1 || chartType === 'pie',
                             position: chartType === 'pie' ? 'right' : 'top',
+                            labels: {{
+                                font: {{ size: 12 }},
+                                padding: 15,
+                                boxWidth: 12,
+                            }},
                         }},
                         title: {{
                             display: !!title,
                             text: title,
-                            font: {{ size: 14, weight: 'bold' }},
+                            font: {{ size: 16, weight: 'bold' }},
+                            padding: {{ bottom: 15 }},
                         }},
                     }},
                     scales: chartType === 'pie' ? {{}} : {{
                         x: {{
-                            title: {{ display: !!chartData.x_label, text: chartData.x_label || '' }},
+                            title: {{
+                                display: !!chartData.x_label,
+                                text: chartData.x_label || '',
+                                font: {{ size: 12 }},
+                                padding: {{ top: 8 }}
+                            }},
+                            ticks: {{
+                                font: {{ size: 11 }},
+                                maxRotation: 45,
+                                minRotation: 0,
+                            }},
                             grid: {{ display: false }},
                             stacked: chartType === 'stacked_bar',
                         }},
                         y: {{
-                            title: {{ display: !!chartData.y_label, text: chartData.y_label || '' }},
+                            title: {{
+                                display: !!chartData.y_label,
+                                text: chartData.y_label || '',
+                                font: {{ size: 12 }},
+                                padding: {{ bottom: 8 }}
+                            }},
+                            ticks: {{
+                                font: {{ size: 11 }},
+                            }},
                             beginAtZero: true,
                             stacked: chartType === 'stacked_bar',
                         }},

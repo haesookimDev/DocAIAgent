@@ -24,12 +24,13 @@
         <!-- Chart Body - Two Column Layout -->
         <div class="flex-1 grid grid-cols-3 gap-8">
             {# Chart area (left, larger - 2 cols) #}
-            <div class="col-span-2">
+            <div class="col-span-2 flex flex-col">
                 {% set chart_ns = namespace(found=false) %}
                 {% for element in elements %}
                     {% if element.kind == 'chart' and not chart_ns.found %}
-                        <div class="h-full chart-container bg-white rounded-xl p-5 flex flex-col animate-fade-in border border-slate-200 {{ element.tailwind_classes }}"
-                             data-chart='{{ element.content | tojson | safe }}'>
+                        <div class="flex-1 chart-container bg-white rounded-xl p-5 animate-fade-in border border-slate-200 {{ element.tailwind_classes }}"
+                             data-chart='{{ element.content | tojson | safe }}'
+                             style="min-height: 280px; max-height: 350px;">
                             <canvas id="chart-{{ element.element_id }}" style="width: 100%; height: 100%;"></canvas>
                         </div>
                         {% set chart_ns.found = true %}

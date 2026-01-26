@@ -492,6 +492,8 @@ async function openEditModal(slideIndex) {
 
         // Update preview with proper container
         const editPreview = document.getElementById('editPreview');
+        // Destroy any existing charts before replacing
+        destroyChartsInElement(editPreview);
         editPreview.innerHTML = `<div class="edit-preview-container">${data.html}</div>`;
         // Initialize charts in the edit preview
         initializeChartsInElement(editPreview);
@@ -522,6 +524,11 @@ async function openEditModal(slideIndex) {
 }
 
 function closeEditModal() {
+    // Clean up charts before closing
+    const editPreview = document.getElementById('editPreview');
+    if (editPreview) {
+        destroyChartsInElement(editPreview);
+    }
     document.getElementById('editModal').style.display = 'none';
     editingSlideIndex = null;
 }
@@ -858,6 +865,8 @@ async function updatePreviewInRealTime() {
 
         // Update the modal preview
         const editPreview = document.getElementById('editPreview');
+        // Destroy existing charts before replacing HTML to prevent flicker
+        destroyChartsInElement(editPreview);
         editPreview.innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
         // Initialize charts in the updated preview
         initializeChartsInElement(editPreview);
@@ -980,6 +989,8 @@ async function updatePreviewFromJson() {
 
         // Update the modal preview
         const editPreview = document.getElementById('editPreview');
+        // Destroy existing charts before replacing HTML to prevent flicker
+        destroyChartsInElement(editPreview);
         editPreview.innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
         // Initialize charts in the updated preview
         initializeChartsInElement(editPreview);
@@ -1076,6 +1087,7 @@ async function saveSlideChanges() {
         if (wrapper) {
             const scaleContainer = wrapper.querySelector('.slide-scale-container');
             if (scaleContainer) {
+                destroyChartsInElement(scaleContainer);
                 scaleContainer.innerHTML = result.html;
                 // Initialize any charts in the updated slide
                 initializeChartsInElement(scaleContainer);
@@ -1145,6 +1157,7 @@ async function regenerateSlide() {
         if (wrapper) {
             const scaleContainer = wrapper.querySelector('.slide-scale-container');
             if (scaleContainer) {
+                destroyChartsInElement(scaleContainer);
                 scaleContainer.innerHTML = result.html;
                 // Initialize any charts in the updated slide
                 initializeChartsInElement(scaleContainer);
@@ -1153,6 +1166,7 @@ async function regenerateSlide() {
 
         // Update modal preview
         const editPreview = document.getElementById('editPreview');
+        destroyChartsInElement(editPreview);
         editPreview.innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
         // Initialize charts in the edit preview
         initializeChartsInElement(editPreview);
@@ -1262,6 +1276,25 @@ const CHART_COLORS = [
     { bg: 'rgba(99, 102, 241, 0.7)', border: 'rgb(99, 102, 241)' },
 ];
 
+// Store Chart instances for cleanup
+const chartInstances = new Map();
+
+// Destroy all chart instances in a container
+function destroyChartsInElement(container) {
+    if (typeof Chart === 'undefined') return;
+
+    container.querySelectorAll('canvas').forEach(canvas => {
+        const chartInstance = Chart.getChart(canvas);
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+        // Also check our map
+        if (chartInstances.has(canvas.id)) {
+            chartInstances.delete(canvas.id);
+        }
+    });
+}
+
 function initializeChartsInElement(container) {
     if (typeof Chart === 'undefined') {
         console.warn('Chart.js not loaded');
@@ -1269,14 +1302,25 @@ function initializeChartsInElement(container) {
     }
 
     container.querySelectorAll('.chart-container[data-chart]').forEach(function(chartContainer) {
-        if (chartContainer.dataset.initialized === 'true') return;
-
+        // Always re-initialize to ensure fresh chart
         const canvas = chartContainer.querySelector('canvas');
         if (!canvas) return;
 
         try {
+            // Destroy existing chart on this canvas if any
+            const existingChart = Chart.getChart(canvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+
             const chartData = JSON.parse(chartContainer.dataset.chart);
-            createChart(canvas, chartData);
+            const chart = createChart(canvas, chartData);
+
+            // Store reference
+            if (canvas.id) {
+                chartInstances.set(canvas.id, chart);
+            }
+
             chartContainer.dataset.initialized = 'true';
         } catch (e) {
             console.error('Failed to initialize chart:', e);
