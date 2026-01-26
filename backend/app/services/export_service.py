@@ -6,7 +6,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 from pptx import Presentation
-from pptx.util import Inches, Pt
+from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 
@@ -353,6 +353,57 @@ class PPTXExporter:
                 p.font.color.rgb = self.TEXT_COLOR
 
 
+class ImageBasedPPTXExporter:
+    """Exports HTML slides to PPTX as images for pixel-perfect rendering."""
+
+    # Slide dimensions (16:9)
+    SLIDE_WIDTH = Inches(13.333)
+    SLIDE_HEIGHT = Inches(7.5)
+
+    def __init__(self):
+        pass
+
+    def create_presentation(self) -> Presentation:
+        """Create a new presentation with 16:9 aspect ratio."""
+        prs = Presentation()
+        prs.slide_width = self.SLIDE_WIDTH
+        prs.slide_height = self.SLIDE_HEIGHT
+        return prs
+
+    def export_from_images(self, images: list[bytes], speaker_notes: list[str] | None = None) -> bytes:
+        """Export a list of PNG image bytes to PPTX.
+
+        Args:
+            images: List of PNG image bytes, one per slide
+            speaker_notes: Optional list of speaker notes for each slide
+        """
+        prs = self.create_presentation()
+        blank_layout = prs.slide_layouts[6]  # Blank layout
+
+        for idx, image_bytes in enumerate(images):
+            slide = prs.slides.add_slide(blank_layout)
+
+            # Add image as background (full slide)
+            image_stream = io.BytesIO(image_bytes)
+            left = Inches(0)
+            top = Inches(0)
+            width = self.SLIDE_WIDTH
+            height = self.SLIDE_HEIGHT
+
+            slide.shapes.add_picture(image_stream, left, top, width, height)
+
+            # Add speaker notes if provided
+            if speaker_notes and idx < len(speaker_notes) and speaker_notes[idx]:
+                notes_slide = slide.notes_slide
+                notes_slide.notes_text_frame.text = speaker_notes[idx]
+
+        # Save to bytes
+        buffer = io.BytesIO()
+        prs.save(buffer)
+        buffer.seek(0)
+        return buffer.read()
+
+
 class DOCXExporter:
     """Exports SlideSpec/HTML to DOCX format."""
 
@@ -443,26 +494,70 @@ class ExportService:
 
     def __init__(self):
         self.pptx_exporter = PPTXExporter()
+        self.image_pptx_exporter = ImageBasedPPTXExporter()
         self.docx_exporter = DOCXExporter()
 
     def export_to_pptx(self, slidespec: SlideSpec) -> bytes:
-        """Export SlideSpec to PPTX."""
+        """Export SlideSpec to PPTX (element-based, legacy)."""
         return self.pptx_exporter.export_slidespec(slidespec)
+
+    async def export_to_pptx_as_images(self, slidespec: SlideSpec) -> bytes:
+        """Export SlideSpec to PPTX as images (pixel-perfect rendering).
+
+        This captures each slide as an image and embeds them into PPTX,
+        ensuring the output looks exactly like the HTML preview.
+        """
+        from app.services.html_capture_service import get_html_capture_service
+
+        capture_service = get_html_capture_service()
+
+        try:
+            # Capture all slides as images
+            images = await capture_service.capture_slidespec(slidespec)
+
+            # Collect speaker notes
+            speaker_notes = [
+                slide.speaker_notes for slide in slidespec.slides
+            ]
+
+            # Create PPTX from images
+            return self.image_pptx_exporter.export_from_images(images, speaker_notes)
+        finally:
+            # Don't close the service here - it's a singleton
+            pass
+
+    async def export_html_slides_to_pptx(self, html_slides: list[str], speaker_notes: list[str] | None = None) -> bytes:
+        """Export HTML slides to PPTX as images.
+
+        Args:
+            html_slides: List of HTML strings, one per slide
+            speaker_notes: Optional list of speaker notes
+        """
+        from app.services.html_capture_service import get_html_capture_service
+
+        capture_service = get_html_capture_service()
+
+        try:
+            # Capture all HTML slides as images
+            images = await capture_service.capture_html_slides(html_slides)
+
+            # Create PPTX from images
+            return self.image_pptx_exporter.export_from_images(images, speaker_notes)
+        finally:
+            pass
 
     def export_to_docx(self, slidespec: SlideSpec) -> bytes:
         """Export SlideSpec to DOCX."""
         return self.docx_exporter.export_slidespec(slidespec)
 
     def html_to_pptx(self, html_slides: list[str], slidespec: SlideSpec | None = None) -> bytes:
-        """Convert HTML slides to PPTX (uses SlideSpec if available)."""
+        """Convert HTML slides to PPTX (uses SlideSpec if available, legacy)."""
         if slidespec:
             return self.export_to_pptx(slidespec)
-        # Fallback: parse HTML (simplified)
-        raise NotImplementedError("HTML-only export not yet implemented")
+        raise NotImplementedError("Use export_html_slides_to_pptx for HTML-only export")
 
     def html_to_docx(self, html_content: str, slidespec: SlideSpec | None = None) -> bytes:
         """Convert HTML to DOCX (uses SlideSpec if available)."""
         if slidespec:
             return self.export_to_docx(slidespec)
-        # Fallback: parse HTML (simplified)
         raise NotImplementedError("HTML-only export not yet implemented")

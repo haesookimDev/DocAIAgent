@@ -19,6 +19,8 @@ const runInfo = document.getElementById('runInfo');
 let currentRunId = null;
 let currentArtifactId = null;
 let eventSource = null;
+let currentSlideData = {};  // Store slide data for editing
+let editingSlideIndex = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -177,11 +179,16 @@ function startEventStream(runId) {
     });
 }
 
-function addSlide(slideId, slideIndex, html) {
+function addSlide(slideId, slideIndex, html, slideData = null) {
     // Remove empty state if present
     const emptyState = slidesContainer.querySelector('.empty-state');
     if (emptyState) {
         emptyState.remove();
+    }
+
+    // Store slide data for editing
+    if (slideData) {
+        currentSlideData[slideIndex] = slideData;
     }
 
     // Create slide wrapper
@@ -189,8 +196,16 @@ function addSlide(slideId, slideIndex, html) {
     wrapper.className = 'slide-wrapper';
     wrapper.id = `slide-wrapper-${slideId}`;
     wrapper.dataset.index = slideIndex;
+    wrapper.dataset.slideId = slideId;
 
     wrapper.innerHTML = html;
+
+    // Add edit button
+    const editBtn = document.createElement('button');
+    editBtn.className = 'slide-edit-btn';
+    editBtn.innerHTML = '✏️ Edit';
+    editBtn.onclick = () => openEditModal(slideIndex);
+    wrapper.appendChild(editBtn);
 
     // Add slide number badge
     const badge = document.createElement('div');

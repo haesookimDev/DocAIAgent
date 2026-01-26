@@ -215,6 +215,226 @@
         </footer>
     </div>
 
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal" style="display: none;">
+        <div class="modal-backdrop" onclick="closeEditModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Slide <span id="editSlideNumber"></span></h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="edit-tabs">
+                    <button class="edit-tab active" data-tab="visual" onclick="switchEditTab('visual')">Visual Edit</button>
+                    <button class="edit-tab" data-tab="json" onclick="switchEditTab('json')">JSON Edit</button>
+                </div>
+
+                <!-- Visual Editor -->
+                <div id="visualEditor" class="edit-panel">
+                    <div class="edit-preview" id="editPreview"></div>
+                    <div class="edit-form" id="editForm">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- JSON Editor -->
+                <div id="jsonEditor" class="edit-panel" style="display: none;">
+                    <textarea id="jsonEditArea" class="json-editor" rows="20"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="regenerateSlide()">
+                    <span class="btn-icon">🔄</span> Regenerate
+                </button>
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveSlideChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #1f2937;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 4px;
+        }
+        .modal-close:hover {
+            color: #1f2937;
+        }
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        /* Edit tabs */
+        .edit-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .edit-tab {
+            padding: 8px 16px;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #4b5563;
+        }
+        .edit-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Edit panels */
+        .edit-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .edit-preview {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            overflow: auto;
+            max-height: 500px;
+        }
+        .edit-preview .slide {
+            transform: scale(0.5);
+            transform-origin: top left;
+            margin-bottom: -270px;
+        }
+        .edit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .edit-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .edit-field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+        }
+        .edit-field input,
+        .edit-field textarea {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .edit-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* JSON editor */
+        #jsonEditor {
+            display: block;
+        }
+        .json-editor {
+            width: 100%;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            padding: 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #1e293b;
+            color: #e2e8f0;
+            resize: vertical;
+        }
+
+        /* Slide wrapper with edit button */
+        .slide-wrapper {
+            position: relative;
+        }
+        .slide-edit-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: #4b5563;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        .slide-wrapper:hover .slide-edit-btn {
+            opacity: 1;
+        }
+        .slide-edit-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-icon {
+            margin-right: 4px;
+        }
+    </style>
+
     <script src="/static/app.js"></script>
 </body>
 </html>
