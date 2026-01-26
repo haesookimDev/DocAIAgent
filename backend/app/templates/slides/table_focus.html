@@ -12,8 +12,8 @@
             {% set ns = namespace(found=false) %}
             {% for element in elements %}
                 {% if element.role == 'title' and not ns.found %}
-                    <h2 class="text-2xl font-bold text-slate-800 animate-slide-up flex items-center gap-3">
-                        <span class="w-1.5 h-8 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
+                    <h2 class="text-4xl font-bold text-slate-800 animate-slide-up flex items-center gap-4">
+                        <span class="w-2 h-10 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
                         {{ element.content.text }}
                     </h2>
                     {% set ns.found = true %}
@@ -27,20 +27,20 @@
                 {% if element.kind == 'table' %}
                     <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm animate-fade-in">
                         {% if element.content.title %}
-                            <div class="px-5 py-3 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-                                <p class="font-semibold text-slate-700 flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="px-6 py-4 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                                <p class="font-semibold text-xl text-slate-700 flex items-center gap-3">
+                                    <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                     </svg>
                                     {{ element.content.title }}
                                 </p>
                             </div>
                         {% endif %}
-                        <table class="w-full text-sm">
+                        <table class="w-full text-lg">
                             <thead>
                                 <tr class="bg-gradient-to-r from-primary-600 to-primary-700">
                                     {% for col in element.content.columns %}
-                                        <th class="px-5 py-3 text-left text-white font-semibold first:rounded-tl-none last:rounded-tr-none">
+                                        <th class="px-6 py-4 text-left text-white font-semibold first:rounded-tl-none last:rounded-tr-none">
                                             {{ col }}
                                         </th>
                                     {% endfor %}
@@ -50,7 +50,7 @@
                                 {% for row in element.content.rows %}
                                     <tr class="hover:bg-primary-50/50 transition-colors group">
                                         {% for cell in row %}
-                                            <td class="px-5 py-3 text-slate-600 group-hover:text-slate-800 transition-colors">
+                                            <td class="px-6 py-4 text-slate-600 group-hover:text-slate-800 transition-colors">
                                                 {% if cell is number %}
                                                     <span class="font-medium text-primary-600">
                                                         {{ "{:,.0f}".format(cell) if cell == cell|int else "{:,.2f}".format(cell) }}
@@ -71,8 +71,8 @@
             {# Additional notes below table #}
             {% for element in elements %}
                 {% if element.kind == 'text' and element.role != 'title' %}
-                    <p class="text-sm text-slate-500 mt-5 flex items-start gap-2 animate-fade-in delay-100">
-                        <svg class="w-4 h-4 mt-0.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <p class="text-lg text-slate-500 mt-5 flex items-start gap-3 animate-fade-in delay-100">
+                        <svg class="w-5 h-5 mt-0.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         {{ element.content.text }}
@@ -83,7 +83,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-xs border-t border-slate-100" style="padding: 1.5% 4%;">
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-sm border-t border-slate-100" style="padding: 1.5% 4%;">
         {% if citations %}
         <span class="text-slate-400 flex gap-2 flex-wrap">
             {% for citation in citations %}

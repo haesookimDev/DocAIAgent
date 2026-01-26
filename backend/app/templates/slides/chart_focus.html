@@ -12,8 +12,8 @@
             {% set ns = namespace(found=false) %}
             {% for element in elements %}
                 {% if element.role == 'title' and not ns.found %}
-                    <h2 class="text-2xl font-bold text-slate-800 animate-slide-up flex items-center gap-3">
-                        <span class="w-1.5 h-8 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
+                    <h2 class="text-4xl font-bold text-slate-800 animate-slide-up flex items-center gap-4">
+                        <span class="w-2 h-10 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
                         {{ element.content.text }}
                     </h2>
                     {% set ns.found = true %}
@@ -43,17 +43,17 @@
                 {% set insight_ns = namespace(found=false) %}
                 {% for element in elements %}
                     {% if element.kind == 'bullets' and not insight_ns.found %}
-                        <div class="bg-slate-50 rounded-xl p-4 flex-1 animate-slide-up delay-100 overflow-auto">
-                            <p class="font-semibold text-sm text-primary-600 mb-3 flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="bg-slate-50 rounded-xl p-5 flex-1 animate-slide-up delay-100 overflow-auto">
+                            <p class="font-semibold text-lg text-primary-600 mb-4 flex items-center gap-3">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                 </svg>
                                 Key Insights
                             </p>
-                            <ul class="space-y-2">
+                            <ul class="space-y-3">
                                 {% for item in element.content['items'] %}
-                                    <li class="flex items-start gap-2 text-sm text-slate-600">
-                                        <span class="w-1.5 h-1.5 mt-2 bg-gradient-to-r from-primary-500 to-accent rounded-full flex-shrink-0"></span>
+                                    <li class="flex items-start gap-3 text-lg text-slate-600">
+                                        <span class="w-2.5 h-2.5 mt-2 bg-gradient-to-r from-primary-500 to-accent rounded-full flex-shrink-0"></span>
                                         {% if item is string %}
                                             <span>{{ item }}</span>
                                         {% else %}
@@ -65,8 +65,8 @@
                         </div>
                         {% set insight_ns.found = true %}
                     {% elif element.kind == 'text' and element.role != 'title' and not insight_ns.found %}
-                        <div class="bg-slate-50 rounded-xl p-4 flex-1 animate-slide-up delay-100 overflow-auto">
-                            <p class="text-sm text-slate-600 leading-relaxed">{{ element.content.text }}</p>
+                        <div class="bg-slate-50 rounded-xl p-5 flex-1 animate-slide-up delay-100 overflow-auto">
+                            <p class="text-lg text-slate-600 leading-relaxed">{{ element.content.text }}</p>
                         </div>
                         {% set insight_ns.found = true %}
                     {% endif %}
@@ -76,7 +76,7 @@
     </div>
 
     <!-- Footer - absolute positioned at bottom -->
-    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-xs border-t border-slate-100" style="padding: 1.5% 4%;">
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-sm border-t border-slate-100" style="padding: 1.5% 4%;">
         {% if citations %}
         <span class="text-slate-400 flex gap-2 flex-wrap">
             {% for citation in citations %}

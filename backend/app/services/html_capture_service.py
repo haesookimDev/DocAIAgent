@@ -164,16 +164,16 @@ function initializeCharts() {{
                             display: series.length > 1 || chartType === 'pie',
                             position: chartType === 'pie' ? 'right' : 'top',
                             labels: {{
-                                font: {{ size: 12 }},
-                                padding: 15,
-                                boxWidth: 12,
+                                font: {{ size: 18 }},
+                                padding: 20,
+                                boxWidth: 16,
                             }},
                         }},
                         title: {{
                             display: !!title,
                             text: title,
-                            font: {{ size: 16, weight: 'bold' }},
-                            padding: {{ bottom: 15 }},
+                            font: {{ size: 24, weight: 'bold' }},
+                            padding: {{ bottom: 20 }},
                         }},
                     }},
                     scales: chartType === 'pie' ? {{}} : {{
@@ -181,11 +181,11 @@ function initializeCharts() {{
                             title: {{
                                 display: !!chartData.x_label,
                                 text: chartData.x_label || '',
-                                font: {{ size: 12 }},
-                                padding: {{ top: 8 }}
+                                font: {{ size: 18 }},
+                                padding: {{ top: 10 }}
                             }},
                             ticks: {{
-                                font: {{ size: 11 }},
+                                font: {{ size: 16 }},
                                 maxRotation: 45,
                                 minRotation: 0,
                             }},
@@ -196,11 +196,11 @@ function initializeCharts() {{
                             title: {{
                                 display: !!chartData.y_label,
                                 text: chartData.y_label || '',
-                                font: {{ size: 12 }},
-                                padding: {{ bottom: 8 }}
+                                font: {{ size: 18 }},
+                                padding: {{ bottom: 10 }}
                             }},
                             ticks: {{
-                                font: {{ size: 11 }},
+                                font: {{ size: 16 }},
                             }},
                             beginAtZero: true,
                             stacked: chartType === 'stacked_bar',

@@ -15,15 +15,15 @@
     <div class="relative h-full flex flex-col justify-center" style="padding: 5% 8%;">
         {% for element in elements %}
             {% if element.role == 'title' or (element.kind == 'text' and loop.first) %}
-                <div class="flex items-center gap-6 mb-4">
-                    <div class="w-16 h-1 bg-gradient-to-r from-accent to-primary-500 rounded-full"></div>
-                    <span class="text-accent font-semibold text-sm uppercase tracking-wider">Section</span>
+                <div class="flex items-center gap-6 mb-6">
+                    <div class="w-20 h-1.5 bg-gradient-to-r from-accent to-primary-500 rounded-full"></div>
+                    <span class="text-accent font-semibold text-lg uppercase tracking-wider">Section</span>
                 </div>
-                <h1 class="text-4xl font-bold text-slate-800 mb-4 animate-slide-up leading-tight {{ element.tailwind_classes }}">
+                <h1 class="text-5xl font-bold text-slate-800 mb-6 animate-slide-up leading-tight {{ element.tailwind_classes }}">
                     {{ element.content.text }}
                 </h1>
             {% elif element.role == 'subtitle' or element.kind == 'text' %}
-                <p class="text-lg text-slate-500 max-w-xl animate-slide-up delay-100 leading-relaxed {{ element.tailwind_classes }}">
+                <p class="text-2xl text-slate-500 max-w-2xl animate-slide-up delay-100 leading-relaxed {{ element.tailwind_classes }}">
                     {{ element.content.text }}
                 </p>
             {% endif %}
@@ -33,7 +33,7 @@
     <!-- Footer -->
     <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center" style="padding: 1.5% 4%;">
         <span></span>
-        <span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-medium">
+        <span class="bg-slate-100 text-slate-500 px-4 py-1.5 rounded-full text-sm font-medium">
             {{ slide_index + 1 }}
         </span>
     </div>

@@ -15,32 +15,32 @@
         {% for element in elements %}
             {% if element.role == 'title' or (element.kind == 'text' and loop.first) %}
                 {% set has_title = true %}
-                <h1 class="text-5xl font-bold text-white mb-6 animate-slide-up tracking-tight">
+                <h1 class="text-6xl font-bold text-white mb-8 animate-slide-up tracking-tight">
                     {{ element.content.text }}
                 </h1>
             {% endif %}
         {% endfor %}
 
         {% if not has_title %}
-            <h1 class="text-5xl font-bold text-white mb-6 animate-slide-up tracking-tight">
+            <h1 class="text-6xl font-bold text-white mb-8 animate-slide-up tracking-tight">
                 감사합니다
             </h1>
         {% endif %}
 
         <!-- Accent line -->
-        <div class="w-20 h-1 bg-white/30 rounded-full mb-8 animate-fade-in"></div>
+        <div class="w-24 h-1.5 bg-white/30 rounded-full mb-10 animate-fade-in"></div>
 
         {% for element in elements %}
             {% if element.role != 'title' and not loop.first %}
                 {% if element.kind == 'text' %}
-                    <p class="text-lg text-white/80 max-w-lg mb-4 animate-fade-in delay-100">
+                    <p class="text-2xl text-white/80 max-w-2xl mb-5 animate-fade-in delay-100">
                         {{ element.content.text }}
                     </p>
                 {% elif element.kind == 'bullets' %}
-                    <ul class="text-left space-y-2 animate-slide-up delay-200">
+                    <ul class="text-left space-y-3 animate-slide-up delay-200">
                         {% for item in element.content['items'] %}
-                            <li class="flex items-center gap-3 text-white/80">
-                                <span class="w-1.5 h-1.5 bg-white/60 rounded-full"></span>
+                            <li class="flex items-center gap-4 text-xl text-white/80">
+                                <span class="w-2.5 h-2.5 bg-white/60 rounded-full"></span>
                                 {% if item is string %}
                                     {{ item }}
                                 {% else %}
@@ -54,8 +54,8 @@
         {% endfor %}
 
         <!-- Contact info -->
-        <div class="mt-10 pt-6 border-t border-white/20 animate-fade-in delay-300">
-            <p class="text-sm text-white/50">
+        <div class="mt-12 pt-8 border-t border-white/20 animate-fade-in delay-300">
+            <p class="text-lg text-white/50">
                 Questions? Contact us for more information.
             </p>
         </div>
@@ -63,6 +63,6 @@
 
     <!-- Footer -->
     <div class="absolute bottom-0 left-0 right-0 flex justify-end" style="padding: 1.5% 4%;">
-        <span class="bg-white/10 text-white/60 px-3 py-1 rounded-full text-xs font-medium">{{ slide_index + 1 }}</span>
+        <span class="bg-white/10 text-white/60 px-4 py-1.5 rounded-full text-sm font-medium">{{ slide_index + 1 }}</span>
     </div>
 </div>

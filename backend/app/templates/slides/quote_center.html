@@ -15,15 +15,15 @@
         {% for element in elements %}
             {% if element.kind == 'text' %}
                 {% if element.role == 'quote' or loop.first %}
-                    <div class="max-w-2xl text-center animate-slide-up {{ element.tailwind_classes }}">
-                        <p class="text-2xl text-white leading-relaxed font-light italic">
+                    <div class="max-w-3xl text-center animate-slide-up {{ element.tailwind_classes }}">
+                        <p class="text-3xl text-white leading-relaxed font-light italic">
                             "{{ element.content.text }}"
                         </p>
                     </div>
                 {% elif element.role == 'source' or element.role == 'attribution' %}
-                    <div class="mt-8 animate-fade-in delay-200 {{ element.tailwind_classes }}">
-                        <div class="w-12 h-0.5 bg-gradient-to-r from-accent to-primary-400 mx-auto mb-4"></div>
-                        <p class="text-primary-300 text-sm font-medium tracking-wide">
+                    <div class="mt-10 animate-fade-in delay-200 {{ element.tailwind_classes }}">
+                        <div class="w-16 h-0.5 bg-gradient-to-r from-accent to-primary-400 mx-auto mb-5"></div>
+                        <p class="text-primary-300 text-xl font-medium tracking-wide">
                             — {{ element.content.text }}
                         </p>
                     </div>
@@ -33,7 +33,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-xs" style="padding: 1.5% 4%;">
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-sm" style="padding: 1.5% 4%;">
         {% if citations %}
         <span class="text-slate-500 flex gap-2">
             {% for citation in citations %}

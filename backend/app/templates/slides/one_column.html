@@ -12,8 +12,8 @@
             {% set ns = namespace(found=false) %}
             {% for element in elements %}
                 {% if element.role == 'title' and not ns.found %}
-                    <h2 class="text-2xl font-bold text-slate-800 animate-slide-up flex items-center gap-3 {{ element.tailwind_classes }}">
-                        <span class="w-1.5 h-8 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
+                    <h2 class="text-4xl font-bold text-slate-800 animate-slide-up flex items-center gap-4 {{ element.tailwind_classes }}">
+                        <span class="w-2 h-10 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
                         {{ element.content.text }}
                     </h2>
                     {% set ns.found = true %}
@@ -26,24 +26,24 @@
             {% for element in elements %}
                 {% if element.role != 'title' %}
                     {% if element.kind == 'text' %}
-                        <p class="text-base text-slate-600 leading-relaxed animate-fade-in flex-shrink-0 {{ element.tailwind_classes }}">
+                        <p class="text-xl text-slate-600 leading-relaxed animate-fade-in flex-shrink-0 {{ element.tailwind_classes }}">
                             {{ element.content.text }}
                         </p>
                     {% elif element.kind == 'bullets' %}
-                        <ul class="space-y-3 animate-slide-up flex-shrink-0 {{ element.tailwind_classes }}">
+                        <ul class="space-y-4 animate-slide-up flex-shrink-0 {{ element.tailwind_classes }}">
                             {% for item in element.content['items'] %}
-                                <li class="flex items-start gap-3 text-slate-700">
-                                    <span class="w-2 h-2 mt-2 bg-gradient-to-r from-primary-500 to-accent rounded-full flex-shrink-0"></span>
+                                <li class="flex items-start gap-4 text-xl text-slate-700">
+                                    <span class="w-3 h-3 mt-2 bg-gradient-to-r from-primary-500 to-accent rounded-full flex-shrink-0"></span>
                                     {% if item is string %}
                                         <span class="leading-relaxed">{{ item }}</span>
                                     {% else %}
                                         <div>
                                             <span class="leading-relaxed">{{ item.text }}</span>
                                             {% if item.children %}
-                                                <ul class="mt-2 ml-4 space-y-2">
+                                                <ul class="mt-3 ml-6 space-y-2">
                                                     {% for child in item.children %}
-                                                        <li class="flex items-start gap-2 text-slate-500 text-sm">
-                                                            <span class="w-1.5 h-1.5 mt-1.5 border border-primary-400 rounded-full flex-shrink-0"></span>
+                                                        <li class="flex items-start gap-3 text-slate-500 text-lg">
+                                                            <span class="w-2 h-2 mt-2 border-2 border-primary-400 rounded-full flex-shrink-0"></span>
                                                             <span>{{ child.text }}</span>
                                                         </li>
                                                     {% endfor %}
@@ -57,15 +57,15 @@
                     {% elif element.kind == 'table' %}
                         <div class="overflow-x-auto rounded-xl border border-slate-200 animate-fade-in flex-shrink-0">
                             {% if element.content.title %}
-                                <div class="px-4 py-2 bg-slate-50 border-b border-slate-200">
-                                    <p class="font-semibold text-slate-700 text-sm">{{ element.content.title }}</p>
+                                <div class="px-5 py-3 bg-slate-50 border-b border-slate-200">
+                                    <p class="font-semibold text-slate-700 text-lg">{{ element.content.title }}</p>
                                 </div>
                             {% endif %}
-                            <table class="w-full text-sm">
+                            <table class="w-full text-lg">
                                 <thead>
                                     <tr class="bg-gradient-to-r from-primary-600 to-primary-700">
                                         {% for col in element.content.columns %}
-                                            <th class="px-4 py-3 text-left text-white font-semibold">{{ col }}</th>
+                                            <th class="px-5 py-4 text-left text-white font-semibold">{{ col }}</th>
                                         {% endfor %}
                                     </tr>
                                 </thead>
@@ -73,7 +73,7 @@
                                     {% for row in element.content.rows %}
                                         <tr class="hover:bg-slate-50 transition-colors">
                                             {% for cell in row %}
-                                                <td class="px-4 py-3 text-slate-600">{{ cell if cell is not none else '-' }}</td>
+                                                <td class="px-5 py-4 text-slate-600">{{ cell if cell is not none else '-' }}</td>
                                             {% endfor %}
                                         </tr>
                                     {% endfor %}
@@ -93,7 +93,7 @@
                             {% endif %}
                         </div>
                         {% if element.content.caption %}
-                            <p class="text-xs text-slate-400 text-center">{{ element.content.caption }}</p>
+                            <p class="text-base text-slate-400 text-center">{{ element.content.caption }}</p>
                         {% endif %}
                     {% elif element.kind == 'chart' %}
                         <div class="chart-container rounded-xl bg-white border border-slate-200 p-4 animate-fade-in flex-1 {{ element.tailwind_classes }}"
@@ -108,7 +108,7 @@
     </div>
 
     <!-- Footer - absolute positioned at bottom -->
-    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-xs border-t border-slate-100" style="padding: 1.5% 4%;">
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-sm border-t border-slate-100" style="padding: 1.5% 4%;">
         {% if citations %}
         <span class="text-slate-400 flex gap-1">
             {% for citation in citations %}
