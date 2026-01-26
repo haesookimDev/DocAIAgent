@@ -28,51 +28,9 @@
                 {% set chart_ns = namespace(found=false) %}
                 {% for element in elements %}
                     {% if element.kind == 'chart' and not chart_ns.found %}
-                        <div class="h-full chart-gradient rounded-xl p-6 flex flex-col animate-fade-in relative">
-                            {% if element.content.title %}
-                                <div class="absolute top-4 left-5">
-                                    <p class="font-semibold text-slate-700 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                        </svg>
-                                        {{ element.content.title }}
-                                    </p>
-                                </div>
-                            {% endif %}
-                            <div class="flex-1 flex flex-col items-center justify-center">
-                                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-accent flex items-center justify-center mb-4">
-                                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        {% if element.content.chart_type == 'pie' %}
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-                                        {% elif element.content.chart_type == 'line' %}
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4v16" />
-                                        {% else %}
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                        {% endif %}
-                                    </svg>
-                                </div>
-                                <p class="text-xl font-semibold text-primary-600 uppercase tracking-wider">
-                                    {{ element.content.chart_type }} Chart
-                                </p>
-                                <div class="flex flex-wrap justify-center gap-3 mt-4">
-                                    {% for series in element.content.series %}
-                                        <span class="bg-white px-3 py-1 rounded-full text-sm text-slate-600 shadow-sm border border-slate-200">
-                                            {{ series.name }}
-                                        </span>
-                                    {% endfor %}
-                                </div>
-                                {% if element.content.x_label or element.content.y_label %}
-                                    <p class="text-xs text-slate-400 mt-3 flex items-center gap-3">
-                                        {% if element.content.x_label %}
-                                            <span class="bg-slate-100 px-2 py-0.5 rounded">X: {{ element.content.x_label }}</span>
-                                        {% endif %}
-                                        {% if element.content.y_label %}
-                                            <span class="bg-slate-100 px-2 py-0.5 rounded">Y: {{ element.content.y_label }}</span>
-                                        {% endif %}
-                                    </p>
-                                {% endif %}
-                            </div>
+                        <div class="h-full chart-container bg-white rounded-xl p-5 flex flex-col animate-fade-in border border-slate-200 {{ element.tailwind_classes }}"
+                             data-chart='{{ element.content | tojson | safe }}'>
+                            <canvas id="chart-{{ element.element_id }}" style="width: 100%; height: 100%;"></canvas>
                         </div>
                         {% set chart_ns.found = true %}
                     {% endif %}

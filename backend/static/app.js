@@ -23,6 +23,8 @@ let currentSlideData = {};  // Store slide data for editing
 let editingSlideIndex = null;
 let slideListVisible = false;
 let slideListData = [];
+let currentSlideSpec = null;  // Current slide spec being edited
+let previewDebounceTimer = null;  // For debouncing preview updates
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -234,6 +236,9 @@ function addSlide(slideId, slideIndex, html, slideData = null) {
     // Add to container
     slidesContainer.appendChild(wrapper);
 
+    // Initialize any charts in the new slide
+    initializeChartsInElement(wrapper);
+
     // Scroll to new slide
     wrapper.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
@@ -349,6 +354,7 @@ async function downloadArtifact(format) {
 
 async function openEditModal(slideIndex) {
     editingSlideIndex = slideIndex;
+    currentSlideSpec = null;  // Reset
 
     // Show modal
     const modal = document.getElementById('editModal');
@@ -365,18 +371,29 @@ async function openEditModal(slideIndex) {
         currentSlideData[slideIndex] = data;
 
         // Update preview with proper container
-        document.getElementById('editPreview').innerHTML = `<div class="edit-preview-container">${data.html}</div>`;
+        const editPreview = document.getElementById('editPreview');
+        editPreview.innerHTML = `<div class="edit-preview-container">${data.html}</div>`;
+        // Initialize charts in the edit preview
+        initializeChartsInElement(editPreview);
 
         // Fetch full slide spec for JSON editor
         const specResponse = await fetch(`${API_BASE}/artifacts/${currentArtifactId}/slidespec`);
         const spec = await specResponse.json();
         const slideSpec = spec.slides[slideIndex];
 
+        // Store current slide spec for real-time editing
+        currentSlideSpec = JSON.parse(JSON.stringify(slideSpec));
+
         // Populate JSON editor
         document.getElementById('jsonEditArea').value = JSON.stringify(slideSpec, null, 2);
 
         // Build visual edit form
         buildVisualEditForm(slideSpec);
+
+        // Attach real-time preview listeners after form is built
+        setTimeout(() => {
+            attachPreviewListeners();
+        }, 100);
 
     } catch (error) {
         console.error('Error loading slide:', error);
@@ -620,6 +637,8 @@ function selectTheme(themeId) {
     const theme = THEME_PRESETS.find(t => t.id === themeId);
     if (theme) {
         document.getElementById('editSlideTailwind').value = theme.classes;
+        // Trigger real-time preview update
+        debouncedPreviewUpdate();
     }
 }
 
@@ -630,6 +649,9 @@ function setElementColor(idx, colorValue, colorClass) {
     // Highlight selected preset
     document.querySelectorAll(`[data-idx="${idx}"]`).forEach(el => el.classList.remove('selected'));
     event.target.classList.add('selected');
+
+    // Trigger real-time preview update
+    debouncedPreviewUpdate();
 }
 
 function setElementWeight(idx, weight) {
@@ -638,6 +660,9 @@ function setElementWeight(idx, weight) {
     event.target.classList.add('active');
 
     updateElementTailwindClass(idx, 'font-', weight);
+
+    // Trigger real-time preview update
+    debouncedPreviewUpdate();
 }
 
 function updateElementStyle(idx) {
@@ -645,6 +670,9 @@ function updateElementStyle(idx) {
     if (fontSize) {
         updateElementTailwindClass(idx, 'text-', fontSize);
     }
+
+    // Trigger real-time preview update
+    debouncedPreviewUpdate();
 }
 
 function updateElementTailwindClass(idx, prefix, newClass) {
@@ -664,11 +692,195 @@ function updateElementTailwindClass(idx, prefix, newClass) {
     input.value = classes.join(' ');
 }
 
+// Debounce function for real-time preview
+function debounce(func, wait) {
+    return function executedFunction(...args) {
+        clearTimeout(previewDebounceTimer);
+        previewDebounceTimer = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// Show/hide preview updating indicator
+function setPreviewUpdating(updating) {
+    const indicator = document.getElementById('previewUpdating');
+    if (indicator) {
+        indicator.style.display = updating ? 'flex' : 'none';
+    }
+}
+
+// Real-time preview update
+async function updatePreviewInRealTime() {
+    if (editingSlideIndex === null || !currentSlideSpec) return;
+
+    setPreviewUpdating(true);
+
+    try {
+        // Build slide data from current form values
+        const slideData = buildSlideDataFromForm();
+
+        // Call preview API
+        const response = await fetch(
+            `${API_BASE}/artifacts/${currentArtifactId}/slides/${editingSlideIndex}/preview`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(slideData),
+            }
+        );
+
+        if (!response.ok) {
+            console.warn('Preview update failed');
+            setPreviewUpdating(false);
+            return;
+        }
+
+        const result = await response.json();
+
+        // Update the modal preview
+        const editPreview = document.getElementById('editPreview');
+        editPreview.innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
+        // Initialize charts in the updated preview
+        initializeChartsInElement(editPreview);
+
+        // Also update JSON editor if in visual mode
+        const isJsonMode = document.querySelector('.edit-tab[data-tab="json"]')?.classList.contains('active');
+        if (!isJsonMode) {
+            document.getElementById('jsonEditArea').value = JSON.stringify(slideData, null, 2);
+        }
+
+    } catch (error) {
+        console.warn('Preview update error:', error);
+    } finally {
+        setPreviewUpdating(false);
+    }
+}
+
+// Build slide data from visual form
+function buildSlideDataFromForm() {
+    if (!currentSlideSpec) return null;
+
+    const slideData = JSON.parse(JSON.stringify(currentSlideSpec)); // Deep copy
+
+    // Update layout
+    const layoutSelect = document.getElementById('editLayout');
+    if (layoutSelect) {
+        slideData.layout = { layout_id: layoutSelect.value };
+    }
+
+    // Update slide tailwind classes
+    const slideTailwind = document.getElementById('editSlideTailwind');
+    if (slideTailwind) {
+        slideData.tailwind_classes = slideTailwind.value || null;
+    }
+
+    // Update elements
+    slideData.elements?.forEach((elem, idx) => {
+        const textInput = document.getElementById(`editElem${idx}`);
+        const tailwindInput = document.getElementById(`editElemTailwind${idx}`);
+
+        if (textInput) {
+            const kind = textInput.dataset.kind;
+            if (kind === 'text') {
+                elem.content = { text: textInput.value };
+            } else if (kind === 'bullets') {
+                const items = textInput.value.split('\n').filter(item => item.trim());
+                elem.content = { items: items };
+            }
+        }
+
+        if (tailwindInput) {
+            elem.tailwind_classes = tailwindInput.value || null;
+        }
+    });
+
+    return slideData;
+}
+
+// Debounced preview update (300ms delay)
+const debouncedPreviewUpdate = debounce(updatePreviewInRealTime, 300);
+
+// Attach event listeners for real-time preview
+function attachPreviewListeners() {
+    // Layout select
+    const layoutSelect = document.getElementById('editLayout');
+    if (layoutSelect) {
+        layoutSelect.addEventListener('change', debouncedPreviewUpdate);
+    }
+
+    // Find all text inputs and textareas in the edit form
+    const editForm = document.getElementById('editForm');
+    if (editForm) {
+        editForm.querySelectorAll('textarea, input[type="text"]').forEach(input => {
+            input.addEventListener('input', debouncedPreviewUpdate);
+        });
+
+        editForm.querySelectorAll('select').forEach(select => {
+            select.addEventListener('change', debouncedPreviewUpdate);
+        });
+
+        editForm.querySelectorAll('input[type="color"]').forEach(colorInput => {
+            colorInput.addEventListener('input', debouncedPreviewUpdate);
+        });
+    }
+
+    // JSON editor - debounced preview with longer delay
+    const jsonEditor = document.getElementById('jsonEditArea');
+    if (jsonEditor) {
+        jsonEditor.addEventListener('input', debounce(updatePreviewFromJson, 500));
+    }
+}
+
+// Update preview from JSON editor
+async function updatePreviewFromJson() {
+    if (editingSlideIndex === null) return;
+
+    setPreviewUpdating(true);
+
+    try {
+        const jsonText = document.getElementById('jsonEditArea').value;
+        const slideData = JSON.parse(jsonText);
+
+        // Call preview API
+        const response = await fetch(
+            `${API_BASE}/artifacts/${currentArtifactId}/slides/${editingSlideIndex}/preview`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(slideData),
+            }
+        );
+
+        if (!response.ok) {
+            console.warn('JSON preview update failed');
+            setPreviewUpdating(false);
+            return;
+        }
+
+        const result = await response.json();
+
+        // Update the modal preview
+        const editPreview = document.getElementById('editPreview');
+        editPreview.innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
+        // Initialize charts in the updated preview
+        initializeChartsInElement(editPreview);
+
+        // Update current slide spec to keep in sync
+        currentSlideSpec = slideData;
+
+    } catch (error) {
+        // JSON parse error or API error - ignore silently for real-time editing
+        console.warn('JSON preview error:', error.message);
+    } finally {
+        setPreviewUpdating(false);
+    }
+}
+
 // Make editor functions globally available
 window.selectTheme = selectTheme;
 window.setElementColor = setElementColor;
 window.setElementWeight = setElementWeight;
 window.updateElementStyle = updateElementStyle;
+window.updatePreviewInRealTime = updatePreviewInRealTime;
 
 async function saveSlideChanges() {
     if (editingSlideIndex === null) return;
@@ -735,13 +947,42 @@ async function saveSlideChanges() {
 
         const result = await response.json();
 
-        // Update the slide in the preview
-        const wrapper = document.getElementById(`slide-wrapper-${result.slide_id}`);
+        // Update the slide in the main preview - try by index first, then by slide_id
+        let wrapper = document.querySelector(`[data-index="${editingSlideIndex}"]`);
+        if (!wrapper) {
+            wrapper = document.getElementById(`slide-wrapper-${result.slide_id}`);
+        }
+
         if (wrapper) {
             const scaleContainer = wrapper.querySelector('.slide-scale-container');
             if (scaleContainer) {
                 scaleContainer.innerHTML = result.html;
+                // Initialize any charts in the updated slide
+                initializeChartsInElement(scaleContainer);
             }
+            // Update wrapper attributes if slide_id changed
+            wrapper.id = `slide-wrapper-${result.slide_id}`;
+            wrapper.dataset.slideId = result.slide_id;
+
+            // Briefly highlight the updated slide
+            wrapper.style.boxShadow = '0 0 0 4px #10b981';
+            setTimeout(() => {
+                wrapper.style.boxShadow = '';
+            }, 1000);
+        }
+
+        // Update slide list if visible
+        if (slideListVisible && slideListData[editingSlideIndex]) {
+            // Extract title from saved data
+            let title = '';
+            if (slideData.elements) {
+                const titleElem = slideData.elements.find(e => e.role === 'title');
+                if (titleElem && titleElem.content) {
+                    title = titleElem.content.text || '';
+                }
+            }
+            slideListData[editingSlideIndex].title = title;
+            renderSlideList();
         }
 
         updateStatus('Changes saved!');
@@ -785,11 +1026,16 @@ async function regenerateSlide() {
             const scaleContainer = wrapper.querySelector('.slide-scale-container');
             if (scaleContainer) {
                 scaleContainer.innerHTML = result.html;
+                // Initialize any charts in the updated slide
+                initializeChartsInElement(scaleContainer);
             }
         }
 
         // Update modal preview
-        document.getElementById('editPreview').innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
+        const editPreview = document.getElementById('editPreview');
+        editPreview.innerHTML = `<div class="edit-preview-container">${result.html}</div>`;
+        // Initialize charts in the edit preview
+        initializeChartsInElement(editPreview);
         document.getElementById('jsonEditArea').value = JSON.stringify(result.slide_data, null, 2);
         buildVisualEditForm(result.slide_data);
 
@@ -884,6 +1130,133 @@ function updateSlideList(slideIndex, title) {
     }
 }
 
+// ==================== CHART INITIALIZATION ====================
+
+// Color palette for charts
+const CHART_COLORS = [
+    { bg: 'rgba(59, 130, 246, 0.7)', border: 'rgb(59, 130, 246)' },
+    { bg: 'rgba(139, 92, 246, 0.7)', border: 'rgb(139, 92, 246)' },
+    { bg: 'rgba(16, 185, 129, 0.7)', border: 'rgb(16, 185, 129)' },
+    { bg: 'rgba(249, 115, 22, 0.7)', border: 'rgb(249, 115, 22)' },
+    { bg: 'rgba(236, 72, 153, 0.7)', border: 'rgb(236, 72, 153)' },
+    { bg: 'rgba(99, 102, 241, 0.7)', border: 'rgb(99, 102, 241)' },
+];
+
+function initializeChartsInElement(container) {
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not loaded');
+        return;
+    }
+
+    container.querySelectorAll('.chart-container[data-chart]').forEach(function(chartContainer) {
+        if (chartContainer.dataset.initialized === 'true') return;
+
+        const canvas = chartContainer.querySelector('canvas');
+        if (!canvas) return;
+
+        try {
+            const chartData = JSON.parse(chartContainer.dataset.chart);
+            createChart(canvas, chartData);
+            chartContainer.dataset.initialized = 'true';
+        } catch (e) {
+            console.error('Failed to initialize chart:', e);
+        }
+    });
+}
+
+function createChart(canvas, chartData) {
+    const chartType = chartData.chart_type;
+    const series = chartData.series || [];
+    const title = chartData.title || '';
+
+    // Prepare labels and datasets based on chart type
+    let labels = [];
+    let datasets = [];
+
+    if (chartType === 'pie') {
+        // For pie charts, use the first series
+        if (series.length > 0) {
+            labels = series[0].data.map(d => String(d.x));
+            datasets = [{
+                data: series[0].data.map(d => d.y),
+                backgroundColor: series[0].data.map((_, i) => CHART_COLORS[i % CHART_COLORS.length].bg),
+                borderColor: series[0].data.map((_, i) => CHART_COLORS[i % CHART_COLORS.length].border),
+                borderWidth: 2,
+            }];
+        }
+    } else {
+        // For bar, line, area charts
+        if (series.length > 0) {
+            labels = series[0].data.map(d => String(d.x));
+        }
+
+        datasets = series.map((s, idx) => ({
+            label: s.name,
+            data: s.data.map(d => d.y),
+            backgroundColor: CHART_COLORS[idx % CHART_COLORS.length].bg,
+            borderColor: CHART_COLORS[idx % CHART_COLORS.length].border,
+            borderWidth: 2,
+            fill: chartType === 'area',
+            tension: chartType === 'line' || chartType === 'area' ? 0.3 : 0,
+        }));
+    }
+
+    // Map chart types to Chart.js types
+    let type = chartType;
+    if (type === 'area') type = 'line';
+    if (type === 'stacked_bar') type = 'bar';
+
+    const config = {
+        type: type,
+        data: {
+            labels: labels,
+            datasets: datasets,
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: series.length > 1 || chartType === 'pie',
+                    position: chartType === 'pie' ? 'right' : 'top',
+                    labels: {
+                        font: { size: 11 },
+                        padding: 12,
+                    },
+                },
+                title: {
+                    display: !!title,
+                    text: title,
+                    font: { size: 14, weight: 'bold' },
+                    padding: { bottom: 16 },
+                },
+            },
+            scales: chartType === 'pie' ? {} : {
+                x: {
+                    title: {
+                        display: !!chartData.x_label,
+                        text: chartData.x_label || '',
+                        font: { size: 11 },
+                    },
+                    grid: { display: false },
+                    stacked: chartType === 'stacked_bar',
+                },
+                y: {
+                    title: {
+                        display: !!chartData.y_label,
+                        text: chartData.y_label || '',
+                        font: { size: 11 },
+                    },
+                    beginAtZero: true,
+                    stacked: chartType === 'stacked_bar',
+                },
+            },
+        },
+    };
+
+    new Chart(canvas, config);
+}
+
 // Make functions globally available
 window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
@@ -892,3 +1265,4 @@ window.saveSlideChanges = saveSlideChanges;
 window.regenerateSlide = regenerateSlide;
 window.toggleSlideList = toggleSlideList;
 window.scrollToSlide = scrollToSlide;
+window.initializeChartsInElement = initializeChartsInElement;

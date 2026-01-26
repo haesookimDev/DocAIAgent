@@ -65,8 +65,9 @@
                                 {% endif %}
                             </div>
                         {% elif element.kind == 'chart' %}
-                            <div class="chart-gradient rounded-lg p-4 flex items-center justify-center h-32 animate-fade-in">
-                                <span class="text-primary-600 font-medium text-sm">{{ element.content.chart_type | upper }}: {{ element.content.title | default('Chart') }}</span>
+                            <div class="chart-container bg-white rounded-lg p-3 h-36 animate-fade-in border border-slate-200 {{ element.tailwind_classes }}"
+                                 data-chart='{{ element.content | tojson | safe }}'>
+                                <canvas id="chart-{{ element.element_id }}" style="width: 100%; height: 100%;"></canvas>
                             </div>
                         {% endif %}
                     {% endif %}
@@ -109,8 +110,9 @@
                                 {% endif %}
                             </div>
                         {% elif element.kind == 'chart' %}
-                            <div class="chart-gradient rounded-lg p-4 flex items-center justify-center h-32 animate-fade-in">
-                                <span class="text-primary-600 font-medium text-sm">{{ element.content.chart_type | upper }}: {{ element.content.title | default('Chart') }}</span>
+                            <div class="chart-container bg-white rounded-lg p-3 h-36 animate-fade-in border border-slate-200 {{ element.tailwind_classes }}"
+                                 data-chart='{{ element.content | tojson | safe }}'>
+                                <canvas id="chart-{{ element.element_id }}" style="width: 100%; height: 100%;"></canvas>
                             </div>
                         {% endif %}
                     {% endif %}

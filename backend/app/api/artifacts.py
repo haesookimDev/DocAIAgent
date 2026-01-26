@@ -312,6 +312,36 @@ async def update_element(artifact_id: str, slide_index: int, element_id: str, el
     }
 
 
+@router.post("/artifacts/{artifact_id}/slides/{slide_index}/preview")
+async def preview_slide(artifact_id: str, slide_index: int, slide_data: dict):
+    """Preview a slide with given data without saving (for real-time editing preview)."""
+    storage = _get_storage()
+    slidespec_dict = storage.get_slidespec(artifact_id)
+
+    if not slidespec_dict:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    slides = slidespec_dict.get("slides", [])
+
+    if slide_index < 0 or slide_index >= len(slides):
+        raise HTTPException(status_code=404, detail="Slide not found")
+
+    # Validate the slide data
+    try:
+        validated_slide = Slide.model_validate(slide_data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid slide data: {str(e)}")
+
+    # Render HTML without saving
+    renderer = HTMLSlideRenderer()
+    html_content = renderer.render_slide(validated_slide, slide_index)
+
+    return {
+        "slide_index": slide_index,
+        "html": html_content,
+    }
+
+
 @router.post("/artifacts/{artifact_id}/slides/{slide_index}/regenerate")
 async def regenerate_slide(artifact_id: str, slide_index: int, prompt: str = None):
     """Regenerate a specific slide with optional new prompt."""

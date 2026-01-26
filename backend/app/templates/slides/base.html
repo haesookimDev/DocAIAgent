@@ -6,6 +6,8 @@
     <title>{{ deck_title | default('Presentation') }}</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -121,5 +123,137 @@
 </head>
 <body class="bg-slate-100 font-sans antialiased">
 {{ content | safe }}
+
+<script>
+// Initialize all charts after DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+});
+
+// Also allow manual initialization (for dynamic content)
+function initializeCharts() {
+    document.querySelectorAll('.chart-container[data-chart]').forEach(function(container) {
+        if (container.dataset.initialized === 'true') return;
+
+        const canvas = container.querySelector('canvas');
+        if (!canvas) return;
+
+        try {
+            const chartData = JSON.parse(container.dataset.chart);
+            createChart(canvas, chartData);
+            container.dataset.initialized = 'true';
+        } catch (e) {
+            console.error('Failed to initialize chart:', e);
+        }
+    });
+}
+
+function createChart(canvas, chartData) {
+    const chartType = chartData.chart_type;
+    const series = chartData.series || [];
+    const title = chartData.title || '';
+
+    // Color palette
+    const colors = [
+        { bg: 'rgba(59, 130, 246, 0.7)', border: 'rgb(59, 130, 246)' },
+        { bg: 'rgba(139, 92, 246, 0.7)', border: 'rgb(139, 92, 246)' },
+        { bg: 'rgba(16, 185, 129, 0.7)', border: 'rgb(16, 185, 129)' },
+        { bg: 'rgba(249, 115, 22, 0.7)', border: 'rgb(249, 115, 22)' },
+        { bg: 'rgba(236, 72, 153, 0.7)', border: 'rgb(236, 72, 153)' },
+        { bg: 'rgba(99, 102, 241, 0.7)', border: 'rgb(99, 102, 241)' },
+    ];
+
+    // Prepare labels and datasets based on chart type
+    let labels = [];
+    let datasets = [];
+
+    if (chartType === 'pie') {
+        // For pie charts, use the first series
+        if (series.length > 0) {
+            labels = series[0].data.map(d => String(d.x));
+            datasets = [{
+                data: series[0].data.map(d => d.y),
+                backgroundColor: series[0].data.map((_, i) => colors[i % colors.length].bg),
+                borderColor: series[0].data.map((_, i) => colors[i % colors.length].border),
+                borderWidth: 2,
+            }];
+        }
+    } else {
+        // For bar, line, area charts
+        // Extract labels from first series
+        if (series.length > 0) {
+            labels = series[0].data.map(d => String(d.x));
+        }
+
+        datasets = series.map((s, idx) => ({
+            label: s.name,
+            data: s.data.map(d => d.y),
+            backgroundColor: colors[idx % colors.length].bg,
+            borderColor: colors[idx % colors.length].border,
+            borderWidth: 2,
+            fill: chartType === 'area',
+            tension: chartType === 'line' || chartType === 'area' ? 0.3 : 0,
+        }));
+    }
+
+    // Map chart types
+    let type = chartType;
+    if (type === 'area') type = 'line';
+    if (type === 'stacked_bar') type = 'bar';
+
+    const config = {
+        type: type,
+        data: {
+            labels: labels,
+            datasets: datasets,
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: series.length > 1 || chartType === 'pie',
+                    position: chartType === 'pie' ? 'right' : 'top',
+                    labels: {
+                        font: { size: 11 },
+                        padding: 12,
+                    },
+                },
+                title: {
+                    display: !!title,
+                    text: title,
+                    font: { size: 14, weight: 'bold' },
+                    padding: { bottom: 16 },
+                },
+            },
+            scales: chartType === 'pie' ? {} : {
+                x: {
+                    title: {
+                        display: !!chartData.x_label,
+                        text: chartData.x_label || '',
+                        font: { size: 11 },
+                    },
+                    grid: { display: false },
+                    stacked: chartType === 'stacked_bar',
+                },
+                y: {
+                    title: {
+                        display: !!chartData.y_label,
+                        text: chartData.y_label || '',
+                        font: { size: 11 },
+                    },
+                    beginAtZero: true,
+                    stacked: chartType === 'stacked_bar',
+                },
+            },
+        },
+    };
+
+    new Chart(canvas, config);
+}
+
+// Expose for external use
+window.initializeCharts = initializeCharts;
+</script>
 </body>
 </html>

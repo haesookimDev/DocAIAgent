@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/static/styles.css">
     <!-- Tailwind CSS for slide preview -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for chart rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -248,7 +250,16 @@
 
                 <!-- Visual Editor -->
                 <div id="visualEditor" class="edit-panel">
-                    <div class="edit-preview" id="editPreview"></div>
+                    <div class="edit-preview-wrapper">
+                        <div class="edit-preview-header">
+                            <span>Live Preview</span>
+                            <span class="preview-updating" id="previewUpdating" style="display: none;">
+                                <span class="preview-spinner"></span>
+                                Updating...
+                            </span>
+                        </div>
+                        <div class="edit-preview" id="editPreview"></div>
+                    </div>
                     <div class="edit-form" id="editForm">
                         <!-- Dynamically populated -->
                     </div>
@@ -787,6 +798,45 @@
         /* Adjust slides container when list is visible */
         .slides-container {
             flex: 1;
+        }
+
+        /* Edit preview wrapper */
+        .edit-preview-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: fit-content;
+        }
+        .edit-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f3f4f6;
+            border-radius: 8px 8px 0 0;
+            font-size: 12px;
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .preview-updating {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #3b82f6;
+            font-weight: 500;
+        }
+        .preview-spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #93c5fd;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .edit-preview {
+            border-radius: 0 0 8px 8px;
         }
     </style>
 
