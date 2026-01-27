@@ -11,6 +11,10 @@ from app.schemas.slidespec import (
     TableContent,
     Citation,
     LayoutRef,
+    SlideStyle,
+    DeckStyle,
+    BackgroundPreset,
+    ColorScheme,
 )
 from app.schemas.run import (
     RunCreate,
@@ -30,6 +34,10 @@ __all__ = [
     "TableContent",
     "Citation",
     "LayoutRef",
+    "SlideStyle",
+    "DeckStyle",
+    "BackgroundPreset",
+    "ColorScheme",
     "RunCreate",
     "RunResponse",
     "RunStatus",

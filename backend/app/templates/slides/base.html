@@ -85,7 +85,11 @@
             background: #94a3b8;
         }
 
-        /* Gradient backgrounds */
+        /* ============================================
+           배경 프리셋 (Background Presets)
+           ============================================ */
+
+        /* 기본 그라데이션 */
         .gradient-primary {
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
         }
@@ -98,6 +102,118 @@
         .gradient-light {
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
         }
+
+        /* 추가 그라데이션 프리셋 */
+        .gradient-warm {
+            background: linear-gradient(135deg, #f97316 0%, #ec4899 100%);
+        }
+        .gradient-green {
+            background: linear-gradient(135deg, #059669 0%, #34d399 100%);
+        }
+        .gradient-purple {
+            background: linear-gradient(135deg, #7c3aed 0%, #c084fc 100%);
+        }
+        .gradient-ocean {
+            background: linear-gradient(135deg, #0891b2 0%, #22d3d1 100%);
+        }
+
+        /* ============================================
+           색상 테마 (Color Schemes)
+           ============================================ */
+
+        /* 기본 테마 */
+        .scheme-default {
+            --accent-color: #3b82f6;
+            --accent-light: #60a5fa;
+            --accent-dark: #1d4ed8;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        /* 프로페셔널 테마 (네이비, 그레이) */
+        .scheme-professional {
+            --accent-color: #1e3a5f;
+            --accent-light: #2d4a6f;
+            --accent-dark: #0f2a4f;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+        }
+
+        /* 크리에이티브 테마 (다채로운) */
+        .scheme-creative {
+            --accent-color: #ec4899;
+            --accent-light: #f472b6;
+            --accent-dark: #db2777;
+            --text-primary: #1e1b4b;
+            --text-secondary: #6366f1;
+        }
+
+        /* 볼드 테마 (강렬한 대비) */
+        .scheme-bold {
+            --accent-color: #dc2626;
+            --accent-light: #ef4444;
+            --accent-dark: #b91c1c;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+        }
+
+        /* 미니멀 테마 (흑백) */
+        .scheme-minimal {
+            --accent-color: #18181b;
+            --accent-light: #3f3f46;
+            --accent-dark: #09090b;
+            --text-primary: #18181b;
+            --text-secondary: #71717a;
+        }
+
+        /* 따뜻한 테마 */
+        .scheme-warm {
+            --accent-color: #ea580c;
+            --accent-light: #f97316;
+            --accent-dark: #c2410c;
+            --text-primary: #431407;
+            --text-secondary: #9a3412;
+        }
+
+        /* 시원한 테마 */
+        .scheme-cool {
+            --accent-color: #0891b2;
+            --accent-light: #22d3d1;
+            --accent-dark: #0e7490;
+            --text-primary: #164e63;
+            --text-secondary: #0e7490;
+        }
+
+        /* 자연 테마 */
+        .scheme-nature {
+            --accent-color: #16a34a;
+            --accent-light: #22c55e;
+            --accent-dark: #15803d;
+            --text-primary: #14532d;
+            --text-secondary: #166534;
+        }
+
+        /* ============================================
+           텍스트 색상 (Light/Dark text)
+           ============================================ */
+        .text-theme-light {
+            color: #ffffff;
+        }
+        .text-theme-light .text-primary { color: #ffffff; }
+        .text-theme-light .text-secondary { color: rgba(255, 255, 255, 0.8); }
+        .text-theme-light .text-muted { color: rgba(255, 255, 255, 0.6); }
+
+        .text-theme-dark {
+            color: #1e293b;
+        }
+        .text-theme-dark .text-primary { color: #1e293b; }
+        .text-theme-dark .text-secondary { color: #64748b; }
+        .text-theme-dark .text-muted { color: #94a3b8; }
+
+        /* 테마 색상 적용 유틸리티 */
+        .accent-bg { background-color: var(--accent-color); }
+        .accent-text { color: var(--accent-color); }
+        .accent-border { border-color: var(--accent-color); }
 
         /* Glass effect */
         .glass {

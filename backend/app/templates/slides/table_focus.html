@@ -1,5 +1,8 @@
 {# Table Focus Layout - 표 중심 슬라이드 (Tailwind) #}
-<div class="slide bg-white relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl {{ slide_tailwind_classes }}"
+{# 기본 배경: bg-white (밝은 배경) #}
+{% set bg_class = style_classes | default('bg-white scheme-default text-theme-dark') %}
+{% set dark_bg = is_dark_bg | default(false) %}
+<div class="slide {{ bg_class }} relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl {{ slide_tailwind_classes }}"
      data-slide-id="{{ slide_id }}" data-layout="table_focus">
 
     <!-- Top accent bar -->
@@ -12,7 +15,7 @@
             {% set ns = namespace(found=false) %}
             {% for element in elements %}
                 {% if element.role == 'title' and not ns.found %}
-                    <h2 class="text-4xl font-bold text-slate-800 animate-slide-up flex items-center gap-4">
+                    <h2 class="text-4xl font-bold {{ 'text-white' if dark_bg else 'text-slate-800' }} animate-slide-up flex items-center gap-4">
                         <span class="w-2 h-10 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
                         {{ element.content.text }}
                     </h2>
@@ -25,11 +28,11 @@
         <div class="flex-1 overflow-auto" style="min-height: 0;">
             {% for element in elements %}
                 {% if element.kind == 'table' %}
-                    <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm animate-fade-in">
+                    <div class="overflow-x-auto rounded-xl {{ 'border border-white/20' if dark_bg else 'border border-slate-200' }} shadow-sm animate-fade-in">
                         {% if element.content.title %}
-                            <div class="px-6 py-4 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-                                <p class="font-semibold text-xl text-slate-700 flex items-center gap-3">
-                                    <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="px-6 py-4 {{ 'bg-white/10 border-b border-white/20' if dark_bg else 'bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200' }}">
+                                <p class="font-semibold text-xl {{ 'text-white' if dark_bg else 'text-slate-700' }} flex items-center gap-3">
+                                    <svg class="w-5 h-5 {{ 'text-white/70' if dark_bg else 'text-primary-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                     </svg>
                                     {{ element.content.title }}
@@ -46,13 +49,13 @@
                                     {% endfor %}
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100">
+                            <tbody class="{{ 'divide-y divide-white/10' if dark_bg else 'divide-y divide-slate-100' }}">
                                 {% for row in element.content.rows %}
-                                    <tr class="hover:bg-primary-50/50 transition-colors group">
+                                    <tr class="{{ 'hover:bg-white/5' if dark_bg else 'hover:bg-primary-50/50' }} transition-colors group">
                                         {% for cell in row %}
-                                            <td class="px-6 py-4 text-slate-600 group-hover:text-slate-800 transition-colors">
+                                            <td class="px-6 py-4 {{ 'text-white/80 group-hover:text-white' if dark_bg else 'text-slate-600 group-hover:text-slate-800' }} transition-colors">
                                                 {% if cell is number %}
-                                                    <span class="font-medium text-primary-600">
+                                                    <span class="font-medium {{ 'text-white' if dark_bg else 'text-primary-600' }}">
                                                         {{ "{:,.0f}".format(cell) if cell == cell|int else "{:,.2f}".format(cell) }}
                                                     </span>
                                                 {% else %}
@@ -71,8 +74,8 @@
             {# Additional notes below table #}
             {% for element in elements %}
                 {% if element.kind == 'text' and element.role != 'title' %}
-                    <p class="text-lg text-slate-500 mt-5 flex items-start gap-3 animate-fade-in delay-100">
-                        <svg class="w-5 h-5 mt-0.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <p class="text-lg {{ 'text-white/60' if dark_bg else 'text-slate-500' }} mt-5 flex items-start gap-3 animate-fade-in delay-100">
+                        <svg class="w-5 h-5 mt-0.5 {{ 'text-white/40' if dark_bg else 'text-slate-400' }} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         {{ element.content.text }}
@@ -83,11 +86,11 @@
     </div>
 
     <!-- Footer -->
-    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-sm border-t border-slate-100" style="padding: 1.5% 4%;">
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-sm {{ 'border-t border-white/10' if dark_bg else 'border-t border-slate-100' }}" style="padding: 1.5% 4%;">
         {% if citations %}
-        <span class="text-slate-400 flex gap-2 flex-wrap">
+        <span class="{{ 'text-white/50' if dark_bg else 'text-slate-400' }} flex gap-2 flex-wrap">
             {% for citation in citations %}
-                <span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded" title="{{ citation.source | default('') }}">
+                <span class="{{ 'bg-white/10 text-white/60' if dark_bg else 'bg-slate-100 text-slate-500' }} px-2 py-0.5 rounded" title="{{ citation.source | default('') }}">
                     [{{ loop.index }}]
                 </span>
             {% endfor %}
@@ -95,6 +98,6 @@
         {% else %}
         <span></span>
         {% endif %}
-        <span class="bg-slate-100 text-slate-500 px-2.5 py-0.5 rounded-full font-medium">{{ slide_index + 1 }}</span>
+        <span class="{{ 'bg-white/10 text-white/70' if dark_bg else 'bg-slate-100 text-slate-500' }} px-2.5 py-0.5 rounded-full font-medium">{{ slide_index + 1 }}</span>
     </div>
 </div>
