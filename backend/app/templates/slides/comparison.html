@@ -1,0 +1,101 @@
+{# Comparison Layout - 비교 (vs 형태) 슬라이드 (Tailwind) #}
+{# 기본 배경: bg-white (밝은 배경) #}
+{% set bg_class = style_classes | default('bg-white scheme-default text-theme-dark') %}
+{% set dark_bg = is_dark_bg | default(false) %}
+<div class="slide {{ bg_class }} relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl {{ slide_tailwind_classes }}"
+     data-slide-id="{{ slide_id }}" data-layout="comparison">
+
+    <!-- Top accent bar -->
+    <div class="absolute top-0 left-0 right-0 h-1 gradient-primary"></div>
+
+    <!-- Content -->
+    <div class="h-full flex flex-col" style="padding: 5% 6%;">
+        <!-- Header -->
+        <div style="flex: 0 0 auto; margin-bottom: 4%;">
+            {% set ns = namespace(found=false) %}
+            {% for element in elements %}
+                {% if element.role == 'title' and not ns.found %}
+                    <h2 class="text-4xl font-bold {{ 'text-white' if dark_bg else 'text-slate-800' }} animate-slide-up flex items-center gap-4 {{ element.tailwind_classes }}">
+                        <span class="w-2 h-10 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
+                        {{ element.content.text }}
+                    </h2>
+                    {% set ns.found = true %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Comparison Body - Two columns with VS in center -->
+        <div class="flex-1 grid grid-cols-2 gap-8 relative" style="min-height: 0;">
+            {# VS divider in center #}
+            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                <div class="{{ 'bg-gradient-to-r from-primary-500 to-accent' if dark_bg else 'bg-gradient-to-r from-primary-500 to-accent' }} w-16 h-16 rounded-full flex items-center justify-center shadow-lg">
+                    <span class="text-white font-bold text-xl">VS</span>
+                </div>
+            </div>
+
+            {% set side_ns = namespace(count=0) %}
+            {% for element in elements if element.role != 'title' %}
+                {% set side_ns.count = side_ns.count + 1 %}
+                {% if side_ns.count <= 2 %}
+                    {# Left side (Option A) or Right side (Option B) #}
+                    {% set is_left = side_ns.count == 1 %}
+                    <div class="{{ 'bg-white/10 border border-white/20' if dark_bg else 'bg-gradient-to-br from-slate-50 to-white border border-slate-200' }} rounded-2xl p-6 flex flex-col animate-slide-{{ 'up' if is_left else 'left' }} overflow-auto {{ 'border-r-4 border-r-primary-500' if is_left else 'border-l-4 border-l-accent' }}">
+
+                        {# Option header #}
+                        <div class="flex items-center gap-3 mb-4 pb-4 {{ 'border-b border-white/20' if dark_bg else 'border-b border-slate-200' }}">
+                            <div class="{{ 'bg-primary-500' if is_left else 'bg-accent' }} w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {{ 'A' if is_left else 'B' }}
+                            </div>
+                            {% if element.kind == 'text' %}
+                                <span class="font-bold text-xl {{ 'text-white' if dark_bg else 'text-slate-800' }}">{{ element.content.text.split('\n')[0] if '\n' in element.content.text else element.content.text }}</span>
+                            {% elif element.kind == 'bullets' %}
+                                <span class="font-bold text-xl {{ 'text-white' if dark_bg else 'text-slate-800' }}">Option {{ 'A' if is_left else 'B' }}</span>
+                            {% endif %}
+                        </div>
+
+                        {# Content #}
+                        {% if element.kind == 'text' %}
+                            {% set text_lines = element.content.text.split('\n') %}
+                            {% if text_lines | length > 1 %}
+                                <ul class="space-y-3 flex-1">
+                                    {% for line in text_lines[1:] if line | trim %}
+                                        <li class="flex items-start gap-3 text-lg {{ 'text-white/80' if dark_bg else 'text-slate-600' }}">
+                                            <span class="w-2 h-2 mt-2 {{ 'bg-primary-400' if is_left else 'bg-accent' }} rounded-full flex-shrink-0"></span>
+                                            <span>{{ line | trim }}</span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        {% elif element.kind == 'bullets' %}
+                            <ul class="space-y-3 flex-1">
+                                {% for item in element.content['items'] %}
+                                    <li class="flex items-start gap-3 text-lg {{ 'text-white/80' if dark_bg else 'text-slate-600' }}">
+                                        <span class="w-2 h-2 mt-2 {{ 'bg-primary-400' if is_left else 'bg-accent' }} rounded-full flex-shrink-0"></span>
+                                        {% if item is string %}<span>{{ item }}</span>{% else %}<span>{{ item.text }}</span>{% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            {# If only one side provided, show empty placeholder #}
+            {% if side_ns.count < 2 %}
+                <div class="{{ 'bg-white/5 border border-white/10' if dark_bg else 'bg-slate-50 border border-slate-200 border-dashed' }} rounded-2xl p-6 flex items-center justify-center">
+                    <span class="{{ 'text-white/40' if dark_bg else 'text-slate-400' }}">Option B</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-sm {{ 'border-t border-white/10' if dark_bg else 'border-t border-slate-100' }}" style="padding: 1.5% 4%;">
+        {% if citations %}
+        <span class="{{ 'text-white/50' if dark_bg else 'text-slate-400' }} flex gap-1">
+            {% for citation in citations %}<span class="{{ 'text-white/70' if dark_bg else 'text-primary-500' }}">[{{ loop.index }}]</span>{% endfor %}
+        </span>
+        {% else %}<span></span>{% endif %}
+        <span class="{{ 'bg-white/10 text-white/70' if dark_bg else 'bg-slate-100 text-slate-500' }} px-2.5 py-0.5 rounded-full font-medium">{{ slide_index + 1 }}</span>
+    </div>
+</div>

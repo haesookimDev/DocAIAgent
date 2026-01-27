@@ -13,6 +13,7 @@ class HTMLSlideRenderer:
 
     # Layout ID to template file mapping
     LAYOUT_TEMPLATES = {
+        # 기본 레이아웃
         "title_center": "title_center.html",
         "section_header": "section_header.html",
         "one_column": "one_column.html",
@@ -21,6 +22,14 @@ class HTMLSlideRenderer:
         "table_focus": "table_focus.html",
         "quote_center": "quote_center.html",
         "closing": "closing.html",
+        # 확장 레이아웃
+        "image_left": "image_left.html",
+        "image_right": "image_right.html",
+        "three_column": "three_column.html",
+        "stats_grid": "stats_grid.html",
+        "timeline": "timeline.html",
+        "comparison": "comparison.html",
+        "big_number": "big_number.html",
     }
 
     # Slide type to default layout mapping
@@ -38,6 +47,8 @@ class HTMLSlideRenderer:
         "gradient-dark",
         "gradient-purple",
         "gradient-ocean",
+        "gradient-accent",  # 보라 그라데이션
+        "gradient-warm",    # 오렌지/핑크 그라데이션
     }
 
     def __init__(self, templates_path: Path | str | None = None):

@@ -1,0 +1,77 @@
+{# Stats Grid Layout - 숫자/통계 강조 슬라이드 (Tailwind) #}
+{# 기본 배경: bg-white (밝은 배경) #}
+{% set bg_class = style_classes | default('bg-white scheme-default text-theme-dark') %}
+{% set dark_bg = is_dark_bg | default(false) %}
+<div class="slide {{ bg_class }} relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl {{ slide_tailwind_classes }}"
+     data-slide-id="{{ slide_id }}" data-layout="stats_grid">
+
+    <!-- Top accent bar -->
+    <div class="absolute top-0 left-0 right-0 h-1 gradient-primary"></div>
+
+    <!-- Content -->
+    <div class="h-full flex flex-col" style="padding: 5% 6%;">
+        <!-- Header -->
+        <div style="flex: 0 0 auto; margin-bottom: 4%;">
+            {% set ns = namespace(found=false) %}
+            {% for element in elements %}
+                {% if element.role == 'title' and not ns.found %}
+                    <h2 class="text-4xl font-bold {{ 'text-white' if dark_bg else 'text-slate-800' }} animate-slide-up flex items-center gap-4 {{ element.tailwind_classes }}">
+                        <span class="w-2 h-10 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
+                        {{ element.content.text }}
+                    </h2>
+                    {% set ns.found = true %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Stats Grid Body -->
+        <div class="flex-1 grid grid-cols-2 gap-6" style="min-height: 0;">
+            {% set stat_colors = ['from-primary-500 to-primary-600', 'from-accent to-accent-dark', 'from-emerald-500 to-emerald-600', 'from-orange-500 to-orange-600'] %}
+            {% set stat_ns = namespace(count=0) %}
+            {% for element in elements if element.role != 'title' %}
+                {% if element.kind == 'text' %}
+                    {% set stat_ns.count = stat_ns.count + 1 %}
+                    {% set color_idx = (stat_ns.count - 1) % 4 %}
+                    <div class="flex flex-col items-center justify-center {{ 'bg-white/10' if dark_bg else 'bg-gradient-to-br from-slate-50 to-slate-100' }} rounded-2xl p-6 animate-fade-in {{ element.tailwind_classes }}"
+                         style="animation-delay: {{ (stat_ns.count - 1) * 100 }}ms;">
+                        {# Try to extract number and label from text #}
+                        {% set text_parts = element.content.text.split('\n') if '\n' in element.content.text else [element.content.text] %}
+                        <div class="text-5xl font-bold bg-gradient-to-r {{ stat_colors[color_idx] }} bg-clip-text text-transparent mb-3">
+                            {{ text_parts[0] }}
+                        </div>
+                        {% if text_parts | length > 1 %}
+                            <p class="text-lg {{ 'text-white/70' if dark_bg else 'text-slate-600' }} text-center">{{ text_parts[1] }}</p>
+                        {% endif %}
+                    </div>
+                {% elif element.kind == 'bullets' %}
+                    {# Each bullet item becomes a stat card #}
+                    {% for item in element.content['items'] %}
+                        {% set stat_ns.count = stat_ns.count + 1 %}
+                        {% set color_idx = (stat_ns.count - 1) % 4 %}
+                        {% set item_text = item if item is string else item.text %}
+                        {% set item_parts = item_text.split('\n') if '\n' in item_text else item_text.split(':') if ':' in item_text else [item_text] %}
+                        <div class="flex flex-col items-center justify-center {{ 'bg-white/10' if dark_bg else 'bg-gradient-to-br from-slate-50 to-slate-100' }} rounded-2xl p-6 animate-fade-in"
+                             style="animation-delay: {{ (stat_ns.count - 1) * 100 }}ms;">
+                            <div class="text-5xl font-bold bg-gradient-to-r {{ stat_colors[color_idx] }} bg-clip-text text-transparent mb-3">
+                                {{ item_parts[0] | trim }}
+                            </div>
+                            {% if item_parts | length > 1 %}
+                                <p class="text-lg {{ 'text-white/70' if dark_bg else 'text-slate-600' }} text-center">{{ item_parts[1] | trim }}</p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-sm {{ 'border-t border-white/10' if dark_bg else 'border-t border-slate-100' }}" style="padding: 1.5% 4%;">
+        {% if citations %}
+        <span class="{{ 'text-white/50' if dark_bg else 'text-slate-400' }} flex gap-1">
+            {% for citation in citations %}<span class="{{ 'text-white/70' if dark_bg else 'text-primary-500' }}">[{{ loop.index }}]</span>{% endfor %}
+        </span>
+        {% else %}<span></span>{% endif %}
+        <span class="{{ 'bg-white/10 text-white/70' if dark_bg else 'bg-slate-100 text-slate-500' }} px-2.5 py-0.5 rounded-full font-medium">{{ slide_index + 1 }}</span>
+    </div>
+</div>

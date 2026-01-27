@@ -1,0 +1,94 @@
+{# Big Number Layout - 큰 숫자 + 설명 슬라이드 (Tailwind) #}
+{# 기본 배경: gradient-primary (어두운 배경) #}
+{% set bg_class = style_classes | default('gradient-primary scheme-default text-theme-light') %}
+{% set dark_bg = is_dark_bg | default(true) %}
+<div class="slide {{ bg_class }} relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl {{ slide_tailwind_classes }}"
+     data-slide-id="{{ slide_id }}" data-layout="big_number">
+
+    <!-- Decorative elements -->
+    <div class="absolute top-0 right-0 w-96 h-96 {{ 'bg-white/5' if dark_bg else 'bg-black/5' }} rounded-full -translate-y-1/2 translate-x-1/2"></div>
+    <div class="absolute bottom-0 left-0 w-64 h-64 {{ 'bg-white/5' if dark_bg else 'bg-black/5' }} rounded-full translate-y-1/2 -translate-x-1/2"></div>
+
+    <!-- Content -->
+    <div class="relative h-full flex flex-col justify-center items-center text-center" style="padding: 5% 8%;">
+        {% set num_ns = namespace(number='', label='', description='') %}
+
+        {% for element in elements %}
+            {% if element.role == 'title' or element.role == 'number' or (element.kind == 'text' and loop.first) %}
+                {% set text = element.content.text %}
+                {% if '\n' in text %}
+                    {% set parts = text.split('\n') %}
+                    {% set num_ns.number = parts[0] %}
+                    {% set num_ns.label = parts[1] if parts | length > 1 else '' %}
+                    {% set num_ns.description = parts[2] if parts | length > 2 else '' %}
+                {% else %}
+                    {% set num_ns.number = text %}
+                {% endif %}
+            {% elif element.kind == 'text' and element.role == 'label' %}
+                {% set num_ns.label = element.content.text %}
+            {% elif element.kind == 'text' and element.role == 'description' %}
+                {% set num_ns.description = element.content.text %}
+            {% elif element.kind == 'text' and element.role != 'title' and element.role != 'number' %}
+                {% if not num_ns.label %}
+                    {% set num_ns.label = element.content.text %}
+                {% elif not num_ns.description %}
+                    {% set num_ns.description = element.content.text %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+
+        {# Big Number #}
+        <div class="animate-slide-up">
+            <span class="text-9xl font-black {{ 'text-white' if dark_bg else 'text-slate-800' }} tracking-tight leading-none">
+                {{ num_ns.number if num_ns.number else '100%' }}
+            </span>
+        </div>
+
+        {# Label #}
+        {% if num_ns.label %}
+            <div class="mt-6 animate-fade-in delay-100">
+                <p class="text-3xl font-semibold {{ 'text-white/90' if dark_bg else 'text-slate-700' }}">
+                    {{ num_ns.label }}
+                </p>
+            </div>
+        {% endif %}
+
+        {# Accent line #}
+        <div class="w-24 h-1.5 {{ 'bg-white/30' if dark_bg else 'bg-slate-300' }} rounded-full my-8 animate-fade-in delay-200"></div>
+
+        {# Description #}
+        {% if num_ns.description %}
+            <div class="max-w-2xl animate-fade-in delay-300">
+                <p class="text-xl {{ 'text-white/70' if dark_bg else 'text-slate-600' }} leading-relaxed">
+                    {{ num_ns.description }}
+                </p>
+            </div>
+        {% endif %}
+
+        {# Additional bullets if present #}
+        {% for element in elements %}
+            {% if element.kind == 'bullets' %}
+                <ul class="mt-8 text-left space-y-3 animate-slide-up delay-300">
+                    {% for item in element.content['items'] %}
+                        <li class="flex items-center gap-4 text-lg {{ 'text-white/80' if dark_bg else 'text-slate-600' }}">
+                            <span class="w-2.5 h-2.5 {{ 'bg-white/60' if dark_bg else 'bg-slate-400' }} rounded-full"></span>
+                            {% if item is string %}{{ item }}{% else %}{{ item.text }}{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- Footer -->
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-sm {{ 'text-white/60' if dark_bg else 'text-slate-500' }}" style="padding: 1.5% 4%;">
+        {% if citations %}
+        <span class="flex gap-2">
+            {% for citation in citations %}
+                <span class="{{ 'bg-white/10' if dark_bg else 'bg-black/10' }} px-2 py-1 rounded">[{{ loop.index }}]</span>
+            {% endfor %}
+        </span>
+        {% else %}<span></span>{% endif %}
+        <span class="{{ 'bg-white/10' if dark_bg else 'bg-black/10' }} px-3 py-1 rounded-full font-medium">{{ slide_index + 1 }}</span>
+    </div>
+</div>

@@ -1,0 +1,149 @@
+{# Three Column Layout - 3단 컬럼 레이아웃 (Tailwind) #}
+{# 기본 배경: bg-white (밝은 배경) #}
+{% set bg_class = style_classes | default('bg-white scheme-default text-theme-dark') %}
+{% set dark_bg = is_dark_bg | default(false) %}
+<div class="slide {{ bg_class }} relative overflow-hidden my-5 mx-auto rounded-2xl shadow-2xl {{ slide_tailwind_classes }}"
+     data-slide-id="{{ slide_id }}" data-layout="three_column">
+
+    <!-- Top accent bar -->
+    <div class="absolute top-0 left-0 right-0 h-1 gradient-primary"></div>
+
+    <!-- Content -->
+    <div class="h-full flex flex-col" style="padding: 5% 6%;">
+        <!-- Header -->
+        <div style="flex: 0 0 auto; margin-bottom: 4%;">
+            {% set ns = namespace(found=false) %}
+            {% for element in elements %}
+                {% if element.role == 'title' and not ns.found %}
+                    <h2 class="text-4xl font-bold {{ 'text-white' if dark_bg else 'text-slate-800' }} animate-slide-up flex items-center gap-4 {{ element.tailwind_classes }}">
+                        <span class="w-2 h-10 bg-gradient-to-b from-primary-500 to-accent rounded-full"></span>
+                        {{ element.content.text }}
+                    </h2>
+                    {% set ns.found = true %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Three Column Body -->
+        <div class="flex-1 grid grid-cols-3 gap-6" style="min-height: 0;">
+            {% set col_ns = namespace(count=0, total=0) %}
+            {% for element in elements if element.role != 'title' %}
+                {% set col_ns.total = col_ns.total + 1 %}
+            {% endfor %}
+            {% set items_per_col = ((col_ns.total + 2) / 3) | int %}
+            {% if items_per_col == 0 %}{% set items_per_col = 1 %}{% endif %}
+
+            {# Column 1 #}
+            <div class="flex flex-col gap-4 {{ 'border-r border-white/10' if dark_bg else 'border-r border-slate-100' }} pr-4 overflow-hidden">
+                {% set col_ns.count = 0 %}
+                {% for element in elements if element.role != 'title' %}
+                    {% set col_ns.count = col_ns.count + 1 %}
+                    {% if col_ns.count <= items_per_col %}
+                        {% if element.kind == 'text' %}
+                            <div class="animate-fade-in">
+                                <p class="text-lg {{ 'text-white/80' if dark_bg else 'text-slate-600' }} leading-relaxed">{{ element.content.text }}</p>
+                            </div>
+                        {% elif element.kind == 'bullets' %}
+                            <ul class="space-y-3 animate-slide-up">
+                                {% for item in element.content['items'] %}
+                                    <li class="flex items-start gap-3 text-lg {{ 'text-white/90' if dark_bg else 'text-slate-700' }}">
+                                        <span class="w-2.5 h-2.5 mt-2 bg-primary-500 rounded-full flex-shrink-0"></span>
+                                        {% if item is string %}<span>{{ item }}</span>{% else %}<span>{{ item.text }}</span>{% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% elif element.kind == 'image' %}
+                            <div class="rounded-lg overflow-hidden shadow-md flex-1" style="min-height: 30%;">
+                                {% if element.content.url %}
+                                    <img src="{{ element.content.url }}" alt="{{ element.content.alt_text | default('') }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="h-full {{ 'bg-white/10' if dark_bg else 'bg-gradient-to-br from-slate-100 to-slate-200' }} flex items-center justify-center {{ 'text-white/50' if dark_bg else 'text-slate-400' }}">
+                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {# Column 2 #}
+            <div class="flex flex-col gap-4 {{ 'border-r border-white/10' if dark_bg else 'border-r border-slate-100' }} pr-4 overflow-hidden">
+                {% set col_ns.count = 0 %}
+                {% for element in elements if element.role != 'title' %}
+                    {% set col_ns.count = col_ns.count + 1 %}
+                    {% if col_ns.count > items_per_col and col_ns.count <= items_per_col * 2 %}
+                        {% if element.kind == 'text' %}
+                            <div class="animate-fade-in delay-100">
+                                <p class="text-lg {{ 'text-white/80' if dark_bg else 'text-slate-600' }} leading-relaxed">{{ element.content.text }}</p>
+                            </div>
+                        {% elif element.kind == 'bullets' %}
+                            <ul class="space-y-3 animate-slide-up delay-100">
+                                {% for item in element.content['items'] %}
+                                    <li class="flex items-start gap-3 text-lg {{ 'text-white/90' if dark_bg else 'text-slate-700' }}">
+                                        <span class="w-2.5 h-2.5 mt-2 bg-accent rounded-full flex-shrink-0"></span>
+                                        {% if item is string %}<span>{{ item }}</span>{% else %}<span>{{ item.text }}</span>{% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% elif element.kind == 'image' %}
+                            <div class="rounded-lg overflow-hidden shadow-md flex-1" style="min-height: 30%;">
+                                {% if element.content.url %}
+                                    <img src="{{ element.content.url }}" alt="{{ element.content.alt_text | default('') }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="h-full {{ 'bg-white/10' if dark_bg else 'bg-gradient-to-br from-slate-100 to-slate-200' }} flex items-center justify-center {{ 'text-white/50' if dark_bg else 'text-slate-400' }}">
+                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {# Column 3 #}
+            <div class="flex flex-col gap-4 overflow-hidden">
+                {% set col_ns.count = 0 %}
+                {% for element in elements if element.role != 'title' %}
+                    {% set col_ns.count = col_ns.count + 1 %}
+                    {% if col_ns.count > items_per_col * 2 %}
+                        {% if element.kind == 'text' %}
+                            <div class="animate-fade-in delay-200">
+                                <p class="text-lg {{ 'text-white/80' if dark_bg else 'text-slate-600' }} leading-relaxed">{{ element.content.text }}</p>
+                            </div>
+                        {% elif element.kind == 'bullets' %}
+                            <ul class="space-y-3 animate-slide-up delay-200">
+                                {% for item in element.content['items'] %}
+                                    <li class="flex items-start gap-3 text-lg {{ 'text-white/90' if dark_bg else 'text-slate-700' }}">
+                                        <span class="w-2.5 h-2.5 mt-2 bg-primary-400 rounded-full flex-shrink-0"></span>
+                                        {% if item is string %}<span>{{ item }}</span>{% else %}<span>{{ item.text }}</span>{% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% elif element.kind == 'image' %}
+                            <div class="rounded-lg overflow-hidden shadow-md flex-1" style="min-height: 30%;">
+                                {% if element.content.url %}
+                                    <img src="{{ element.content.url }}" alt="{{ element.content.alt_text | default('') }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="h-full {{ 'bg-white/10' if dark_bg else 'bg-gradient-to-br from-slate-100 to-slate-200' }} flex items-center justify-center {{ 'text-white/50' if dark_bg else 'text-slate-400' }}">
+                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="absolute bottom-0 left-0 right-0 flex justify-between items-center text-sm {{ 'border-t border-white/10' if dark_bg else 'border-t border-slate-100' }}" style="padding: 1.5% 4%;">
+        {% if citations %}
+        <span class="{{ 'text-white/50' if dark_bg else 'text-slate-400' }} flex gap-1">
+            {% for citation in citations %}<span class="{{ 'text-white/70' if dark_bg else 'text-primary-500' }}">[{{ loop.index }}]</span>{% endfor %}
+        </span>
+        {% else %}<span></span>{% endif %}
+        <span class="{{ 'bg-white/10 text-white/70' if dark_bg else 'bg-slate-100 text-slate-500' }} px-2.5 py-0.5 rounded-full font-medium">{{ slide_index + 1 }}</span>
+    </div>
+</div>

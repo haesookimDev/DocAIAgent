@@ -36,8 +36,8 @@ Rules:
 - Last section should be conclusion/next steps
 - Output ONLY valid JSON, no explanations"""
 
-SLIDESPEC_SYSTEM_PROMPT = """You are a presentation content generator that creates detailed slide specifications with custom Tailwind CSS styling.
-Given an outline and requirements, generate a complete SlideSpec JSON with creative styling.
+SLIDESPEC_SYSTEM_PROMPT = """You are a presentation content generator that creates detailed slide specifications with custom styling.
+Given an outline and requirements, generate a complete SlideSpec JSON with creative styling appropriate for each slide's purpose.
 
 The output must be a valid SlideSpec JSON following this structure:
 {
@@ -49,17 +49,27 @@ The output must be a valid SlideSpec JSON following this structure:
     "audience": "optional string",
     "tone": "optional string"
   },
+  "style": {
+    "default_background": "bg-white",
+    "color_scheme": "default",
+    "accent_color": "#3b82f6"
+  },
   "slides": [
     {
       "slide_id": "s1",
       "type": "title|section|content|closing",
       "layout": {"layout_id": "layout_name"},
-      "tailwind_classes": "optional custom classes for slide container",
+      "style": {
+        "background": "gradient-primary",
+        "color_scheme": "default",
+        "text_color": "auto"
+      },
+      "tailwind_classes": "optional custom classes",
       "elements": [
         {
           "element_id": "s1_e1",
           "kind": "text|bullets|image|chart|table",
-          "role": "title|subtitle|body|visual",
+          "role": "title|subtitle|body|visual|number|label|description",
           "content": {...},
           "tailwind_classes": "optional custom Tailwind classes"
         }
@@ -69,42 +79,92 @@ The output must be a valid SlideSpec JSON following this structure:
   ]
 }
 
-Available layout_ids:
-- title_center: Title slides with centered text
-- section_header: Section divider slides
-- one_column: Single column content
-- two_column: Two column layout
-- chart_focus: Chart with key insights
-- table_focus: Table-focused layout
-- quote_center: Quote/highlight
-- closing: Thank you/closing slides
+=== AVAILABLE LAYOUTS (15 types) ===
 
-Element content formats:
+Basic layouts:
+- title_center: Title slides with centered text (use gradient backgrounds)
+- section_header: Section divider slides (use gradient-accent or gradient-dark)
+- one_column: Single column content (default for most content)
+- two_column: Two column layout (for comparisons, lists)
+- chart_focus: Chart with key insights bullet points
+- table_focus: Table-focused layout with header
+- quote_center: Quote/highlight with large text (use gradient backgrounds)
+- closing: Thank you/closing slides (use gradient-primary)
+
+Extended layouts:
+- image_left: Left image (40%) + right text content (60%)
+- image_right: Left text content (60%) + right image (40%)
+- three_column: Three equal columns (good for comparing 3 items)
+- stats_grid: 2x2 grid for statistics/numbers (use "number\\nlabel" format)
+- timeline: Horizontal timeline with numbered steps (use bullets with steps)
+- comparison: VS comparison with two sides (Option A vs Option B)
+- big_number: Large centered number with label and description (for key metrics)
+
+=== STYLE OPTIONS ===
+
+Background presets (slide.style.background):
+- Light backgrounds: "bg-white", "bg-slate-50", "bg-slate-100"
+- Gradient backgrounds (dark, use text_color: "light"):
+  - "gradient-primary": Blue gradient (professional)
+  - "gradient-dark": Dark slate gradient (serious)
+  - "gradient-accent": Purple gradient (creative)
+  - "gradient-warm": Orange to pink gradient (energetic)
+  - "gradient-green": Green gradient (growth, success)
+  - "gradient-purple": Purple gradient (innovation)
+  - "gradient-ocean": Cyan/teal gradient (calm, tech)
+
+Color schemes (slide.style.color_scheme):
+- "default": Standard blue accents
+- "professional": Navy/conservative
+- "creative": Vibrant purple/pink
+- "bold": High contrast
+- "minimal": Subtle grays
+- "warm": Orange/amber tones
+- "cool": Blue/cyan tones
+- "nature": Green tones
+
+Text color (slide.style.text_color):
+- "auto": Automatically choose based on background (recommended)
+- "light": White text for dark backgrounds
+- "dark": Dark text for light backgrounds
+
+=== ELEMENT CONTENT FORMATS ===
+
 - text: {"text": "content"}
 - bullets: {"items": ["item1", "item2"]}
 - table: {"columns": ["A", "B"], "rows": [["a1", "b1"]]}
 - chart: {"chart_type": "bar|line|pie", "title": "...", "series": [{"name": "...", "data": [{"x": "...", "y": 10}]}]}
 - image: {"alt_text": "description", "caption": "optional"}
 
-Tailwind CSS Styling Guidelines:
-You can use "tailwind_classes" on slides and elements for custom styling.
+Special formats for specific layouts:
+- big_number: Use text with "number\\nlabel\\ndescription" format, or separate elements with roles "number", "label", "description"
+- stats_grid: Use bullets with "value\\nlabel" or "value:label" format for each stat
+- timeline: Use bullets where each item is a step ("Step title\\nDescription" or "Step title:Description")
+- comparison: Provide 2 text or bullets elements for Option A and Option B
 
-Available Tailwind classes (using CDN):
-- Colors: text-red-500, bg-blue-100, border-green-300, etc.
-- Custom colors: primary-50 to primary-900, accent, accent-light, accent-dark
-- Typography: text-sm, text-lg, text-xl, text-2xl, font-bold, font-light, italic, tracking-wide
-- Spacing: p-4, px-6, py-2, m-4, mx-auto, gap-4
-- Layout: flex, grid, items-center, justify-center, space-y-4
-- Effects: shadow-lg, rounded-xl, opacity-80, blur-sm
-- Animations: animate-pulse, animate-bounce, transition-all
-- Borders: border, border-2, border-dashed, rounded-full
-- Backgrounds: bg-gradient-to-r, from-purple-500, to-pink-500
+=== STYLING RULES ===
 
-Example tailwind_classes usage:
-- Slide: "bg-gradient-to-br from-indigo-900 to-purple-900"
-- Title: "text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
-- Text: "text-lg text-gray-300 leading-relaxed"
-- Bullets: "text-emerald-400 font-medium"
+1. Match background to slide purpose:
+   - Title slides: gradient-primary or gradient-accent
+   - Section headers: gradient-dark or gradient-accent
+   - Data/stats slides: bg-white or bg-slate-50
+   - Key insights: gradient-warm or gradient-green
+   - Closing: gradient-primary
+
+2. Vary backgrounds throughout presentation:
+   - Don't use same background for all slides
+   - Alternate between light and dark backgrounds
+   - Use gradients for emphasis slides
+
+3. Choose layouts wisely:
+   - timeline: for processes, steps, roadmaps
+   - stats_grid: for 3-4 key numbers/metrics
+   - big_number: for single important metric
+   - comparison: for pros/cons, before/after, option A vs B
+   - three_column: for 3 categories or options
+
+4. Additional Tailwind classes:
+   You can still use tailwind_classes for extra customization on slides and elements.
 
 Rules:
 - slide_id format: s1, s2, s3...
@@ -112,56 +172,60 @@ Rules:
 - Keep bullet points concise (max 8 per slide)
 - Use appropriate layouts for content type
 - Add speaker notes with key talking points
-- Use tailwind_classes creatively to enhance visual appeal
-- Match styling to the presentation's tone (professional, creative, playful, etc.)
+- Vary styles across slides for visual interest
 - Output ONLY valid JSON"""
 
-SINGLE_SLIDE_SYSTEM_PROMPT = """You are a presentation content generator. Generate a SINGLE slide specification with Tailwind CSS styling.
+SINGLE_SLIDE_SYSTEM_PROMPT = """You are a presentation content generator. Generate a SINGLE slide specification with appropriate styling.
 
-Output ONLY valid JSON for ONE slide (no schema_version, no deck, just the slide object):
+Output ONLY valid JSON for ONE slide:
 {
   "slide_id": "s1",
   "type": "title|section|content|closing",
   "layout": {"layout_id": "layout_name"},
+  "style": {
+    "background": "bg-white|gradient-primary|gradient-dark|etc",
+    "color_scheme": "default",
+    "text_color": "auto"
+  },
   "tailwind_classes": "optional custom classes",
   "elements": [
     {
       "element_id": "s1_e1",
       "kind": "text|bullets|image|chart|table",
-      "role": "title|subtitle|body|visual",
+      "role": "title|subtitle|body|visual|number|label|description",
       "content": {...},
-      "tailwind_classes": "optional custom Tailwind classes"
+      "tailwind_classes": "optional"
     }
   ],
   "speaker_notes": "optional"
 }
 
-Available layout_ids:
-- title_center: Title slides with centered text
-- section_header: Section divider slides
-- one_column: Single column content
-- two_column: Two column layout
-- chart_focus: Chart with key insights
-- table_focus: Table-focused layout
-- quote_center: Quote/highlight
-- closing: Thank you/closing slides
+=== LAYOUTS (15 types) ===
+Basic: title_center, section_header, one_column, two_column, chart_focus, table_focus, quote_center, closing
+Extended: image_left, image_right, three_column, stats_grid, timeline, comparison, big_number
 
-Element content formats:
+=== BACKGROUNDS ===
+Light: "bg-white", "bg-slate-50", "bg-slate-100"
+Gradients (dark): "gradient-primary" (blue), "gradient-dark" (slate), "gradient-accent" (purple), "gradient-warm" (orange-pink), "gradient-green", "gradient-purple", "gradient-ocean" (cyan)
+
+=== LAYOUT USAGE ===
+- timeline: for steps/process (bullets with "Step\\nDescription" format)
+- stats_grid: for 2-4 key numbers (bullets with "value\\nlabel" format)
+- big_number: for single key metric (text with "number\\nlabel\\ndescription")
+- comparison: for A vs B (2 elements for each side)
+- three_column: for 3 categories (3 text/bullets elements)
+
+=== ELEMENT CONTENT ===
 - text: {"text": "content"}
 - bullets: {"items": ["item1", "item2"]}
 - table: {"columns": ["A", "B"], "rows": [["a1", "b1"]]}
-- chart: {"chart_type": "bar|line|pie", "title": "...", "series": [{"name": "...", "data": [{"x": "...", "y": 10}]}]}
-
-Tailwind CSS examples:
-- Slide: "bg-gradient-to-br from-indigo-900 to-purple-900"
-- Title: "text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
-- Text: "text-lg text-gray-300"
+- chart: {"chart_type": "bar|line|pie", "title": "...", "series": [...]}
 
 Rules:
-- Output ONLY valid JSON for ONE slide
-- Use appropriate layout for content type
-- Keep bullet points concise (max 6 items)
-- Use tailwind_classes creatively"""
+- Match background to slide purpose (gradients for emphasis, white for data)
+- Title/section slides: use gradient backgrounds
+- Content slides: vary between light and gradient
+- Output ONLY valid JSON for ONE slide"""
 
 
 class AgentService:
@@ -237,6 +301,19 @@ Generate the complete SlideSpec JSON."""
         slide_type = slide_info.get("type", "content")
         title = slide_info.get("title", "")
         key_points = slide_info.get("key_points", [])
+        suggested_layout = slide_info.get("suggested_layout", "one_column")
+        suggested_style = slide_info.get("suggested_style", {})
+
+        # Build style suggestion text
+        style_suggestion = ""
+        if suggested_style:
+            bg = suggested_style.get("background", "bg-white")
+            text_color = suggested_style.get("text_color", "auto")
+            style_suggestion = f"""
+Suggested style:
+- Background: {bg}
+- Text color: {text_color}
+(Feel free to adjust based on content, but maintain visual variety)"""
 
         user_prompt = f"""Generate slide #{slide_index + 1} for presentation: "{presentation_context.get('title', '')}"
 
@@ -244,14 +321,19 @@ Slide info:
 - Type: {slide_type}
 - Title: {title}
 - Key points to cover: {json.dumps(key_points, ensure_ascii=False)}
+- Suggested layout: {suggested_layout}
+{style_suggestion}
 
 Context:
 - Language: {language}
 - Audience: {presentation_context.get('audience', 'General')}
 - Tone: {presentation_context.get('tone', 'Professional')}
 - Total slides: {presentation_context.get('total_slides', 10)}
+- Current position: Slide {slide_index + 1} of {presentation_context.get('total_slides', 10)}
 
-Generate the slide JSON with slide_id "s{slide_index + 1}"."""
+Generate the slide JSON with slide_id "s{slide_index + 1}".
+Choose an appropriate layout and style for this slide's content and position in the presentation.
+Use gradient backgrounds for title/section/closing slides, and vary styles for content slides."""
 
         result = await self.llm.generate_json(user_prompt, SINGLE_SLIDE_SYSTEM_PROMPT)
 
@@ -465,45 +547,74 @@ Generate the slide JSON with slide_id "s{slide_index + 1}"."""
 
         title = outline.get("title", "Presentation")
 
-        # Title slide
+        # Title slide - use gradient background
         slides.append({
             "type": "title",
             "title": title,
             "key_points": [outline.get("subtitle", "")],
+            "suggested_layout": "title_center",
+            "suggested_style": {"background": "gradient-primary", "text_color": "light"},
         })
 
         # Section slides
         sections = outline.get("sections", [])
-        for section in sections:
+        content_slide_count = 0
+
+        for section_idx, section in enumerate(sections):
             section_title = section.get("title", "Section")
             section_slides = section.get("slides", 1)
             key_points = section.get("key_points", [])
+
+            # Alternate section header backgrounds
+            section_backgrounds = ["gradient-accent", "gradient-dark", "gradient-ocean", "gradient-purple"]
+            section_bg = section_backgrounds[section_idx % len(section_backgrounds)]
 
             # Section header slide
             slides.append({
                 "type": "section",
                 "title": section_title,
                 "key_points": key_points[:2] if key_points else [],
+                "suggested_layout": "section_header",
+                "suggested_style": {"background": section_bg, "text_color": "light"},
             })
 
             # Content slides for this section
             points_per_slide = max(1, len(key_points) // max(1, section_slides - 1)) if section_slides > 1 else len(key_points)
             for i in range(max(0, section_slides - 1)):
+                content_slide_count += 1
                 start = i * points_per_slide
                 end = start + points_per_slide
                 slide_points = key_points[start:end] if key_points else []
+
+                # Suggest varied layouts based on content and position
+                suggested_layout = "one_column"
+                suggested_style = {"background": "bg-white", "text_color": "dark"}
+
+                # Every 3rd content slide, suggest a more visual layout
+                if content_slide_count % 4 == 0:
+                    suggested_layout = "stats_grid"
+                    suggested_style = {"background": "bg-slate-50", "text_color": "dark"}
+                elif content_slide_count % 4 == 2:
+                    suggested_layout = "two_column"
+                elif len(slide_points) >= 4:
+                    # Multiple points might work well as timeline
+                    suggested_layout = "timeline"
 
                 slides.append({
                     "type": "content",
                     "title": f"{section_title} - Details" if section_slides > 2 else section_title,
                     "key_points": slide_points or [f"Details for {section_title}"],
+                    "suggested_layout": suggested_layout,
+                    "suggested_style": suggested_style,
                 })
 
-        # Closing slide
+        # Closing slide - use gradient background
         slides.append({
             "type": "closing",
             "title": "Thank You",
             "key_points": ["Questions?", "Contact information"],
+            "suggested_layout": "closing",
+            "suggested_style": {"background": "gradient-primary", "text_color": "light"},
         })
 
         return slides

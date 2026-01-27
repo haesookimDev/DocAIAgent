@@ -107,6 +107,7 @@ BackgroundPreset = Literal[
     "bg-slate-100",       # 회색 배경
     "gradient-primary",   # 파랑 그라데이션 (타이틀, 강조)
     "gradient-dark",      # 어두운 배경 (인용, 임팩트)
+    "gradient-accent",    # 보라/핑크 그라데이션 (섹션 헤더)
     "gradient-warm",      # 오렌지/핑크 그라데이션 (마케팅, 창의적)
     "gradient-green",     # 그린 계열 (성장, 환경)
     "gradient-purple",    # 보라 계열 (혁신, 기술)
